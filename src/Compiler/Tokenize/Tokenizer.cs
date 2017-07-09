@@ -20,9 +20,13 @@ namespace Compiler.Tokenize
         // TODO(Dan): Possibly add some bounds checks here
         private char Current => _sourceFile.Contents[_index];
         private char Next => _sourceFile.Contents[_index + 1];
+        public ErrorSink ErrorSink => _errorSink;
 
         public IEnumerable<Token> Tokenize(string content)
         {
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+
             return Tokenize(new SourceFile("n/a", content));
         }
         public IEnumerable<Token> Tokenize(SourceFile sourceFile)
@@ -146,7 +150,7 @@ namespace Compiler.Tokenize
         {
             if (Current == 'f' || Current == 'F' || Current == 'd' || Current == 'D' || Current == 'm' || Current == 'M')
             {
-                Advance();
+                Consume();
 
                 if (!IsEOF() && (!Current.IsWhiteSpace() && !Current.IsPunctuation() || Current == '.'))
                     return Error(message: $"Remove '{Current}' in real number");

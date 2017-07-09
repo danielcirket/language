@@ -12,7 +12,7 @@ namespace Compiler
 
         public Error(string message, IEnumerable<string> contents, Severity severity, SourceFilePart filePart)
         {
-            message = Message;
+            Message = message;
             Lines = contents;
             Severity = severity;
             FilePart = filePart;
