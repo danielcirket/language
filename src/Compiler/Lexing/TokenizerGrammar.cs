@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Compiler.Tokenize
+namespace Compiler.Lexing
 {
     internal class TokenizerGrammar
     {

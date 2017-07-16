@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Compiler.Tokenize
+namespace Compiler.Lexing
 {
     internal class Token
     {

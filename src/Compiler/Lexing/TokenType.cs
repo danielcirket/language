@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Compiler.Tokenize
+﻿namespace Compiler.Lexing
 {
     internal enum TokenType
     {

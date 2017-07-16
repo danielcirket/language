@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Compiler;
-using Compiler.Tokenize;
+using Compiler.Lexing;
 using FluentAssertions;
 using Xunit;
 
