@@ -356,7 +356,7 @@ namespace Compiler.Lexing
 
                 case '(':
                     Consume();
-                    return CreateToken(TokenType.LeftParanthesis);
+                    return CreateToken(TokenType.LeftParenthesis);
 
                 case ')':
                     Consume();

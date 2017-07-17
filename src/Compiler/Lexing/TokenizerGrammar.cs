@@ -49,7 +49,7 @@ namespace Compiler.Lexing
                 new TokenMatch(TokenType.RightBracket, "}"),
                 new TokenMatch(TokenType.LeftBrace, "["),
                 new TokenMatch(TokenType.RightBrace, "]"),
-                new TokenMatch(TokenType.LeftParanthesis, "("),
+                new TokenMatch(TokenType.LeftParenthesis, "("),
                 new TokenMatch(TokenType.RightParenthesis, ")"),
                 new TokenMatch(TokenType.GreaterThanOrEqual, ">="),
                 new TokenMatch(TokenType.GreaterThan, ">"),

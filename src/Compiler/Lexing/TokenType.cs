@@ -18,7 +18,7 @@
         RightBracket,
         LeftBrace,
         RightBrace,
-        LeftParanthesis,
+        LeftParenthesis,
         RightParenthesis,
         GreaterThanOrEqual,
         GreaterThan,

@@ -432,7 +432,7 @@ namespace Tokenize.Tests
                         case "}":
                             return TokenType.RightBracket;
                         case "(":
-                            return TokenType.LeftParanthesis;
+                            return TokenType.LeftParenthesis;
                         case ")":
                             return TokenType.RightParenthesis;
                         case "[":
