@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Compiler.Parsing.Syntax.Statements;
+using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -12,21 +13,27 @@ namespace Compiler.Parsing.Syntax.Declarations
         public IEnumerable<ParameterDeclaration> Parameters { get; }
         public TypeDeclaration ReturnType { get; }
 
-        public MethodDeclaration(SourceFilePart filePart, string name, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters, BlockStatement body) 
-            : base(filePart, name)
+        public MethodDeclaration(SourceFilePart span, string name, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters, BlockStatement body) : base(span, name)
         {
-            if (returnType == null)
-                throw new ArgumentNullException(nameof(returnType));
-
-            if (parameters == null)
-                throw new ArgumentNullException(nameof(parameters));
-
-            if (body == null)
-                throw new ArgumentNullException(nameof(body));
-
             ReturnType = returnType;
             Parameters = parameters;
             Body = body;
+        }
+        public MethodDeclaration(SourceFilePart span, string name, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters, BlockStatement body, Scope scope) : base(span, name, scope)
+        {
+            ReturnType = returnType;
+            Parameters = parameters;
+            Body = body;
+        }
+        public MethodDeclaration(MethodDeclaration declaration, IEnumerable<ParameterDeclaration> parameters, Scope scope)
+            : this(declaration.FilePart, declaration.Name, declaration.ReturnType, parameters, declaration.Body, scope)
+        {
+
+        }
+        public MethodDeclaration(MethodDeclaration declaration, IEnumerable<ParameterDeclaration> parameters, BlockStatement body, Scope scope)
+            : this(declaration.FilePart, declaration.Name, declaration.ReturnType, parameters, body, scope)
+        {
+
         }
     }
 }

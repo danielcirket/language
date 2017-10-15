@@ -8,6 +8,9 @@ namespace Compiler.Parsing.Syntax
         public abstract SyntaxKind Kind { get; }
         public SourceFilePart FilePart { get; }
 
+        public void Accept(SyntaxVisitor visitor) => visitor.Visit(this);
+        public T Accept<T>(SyntaxVisitor<T> visitor) => visitor.Visit(this);
+
         protected SyntaxNode(SourceFilePart filePart)
         {
             if (filePart == null)

@@ -1,4 +1,5 @@
 ﻿using System;
+using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -7,13 +8,18 @@ namespace Compiler.Parsing.Syntax.Declarations
         public override SyntaxKind Kind => SyntaxKind.ParameterDeclaration;
         public TypeDeclaration Type { get; }
 
-        public ParameterDeclaration(SourceFilePart filePart, string name, TypeDeclaration type) 
-            : base(filePart, name)
+        public ParameterDeclaration(SourceFilePart span, string name, TypeDeclaration type) : base(span, name)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             Type = type;
+        }
+        public ParameterDeclaration(SourceFilePart span, string name, TypeDeclaration type, Scope scope) : base(span, name, scope)
+        {
+            Type = type;
+        }
+        public ParameterDeclaration(ParameterDeclaration declaration, Scope scope)
+            : this(declaration.FilePart, declaration.Name, declaration.Type, scope)
+        {
+
         }
     }
 }

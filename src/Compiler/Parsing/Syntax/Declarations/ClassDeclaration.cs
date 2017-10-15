@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -11,31 +12,44 @@ namespace Compiler.Parsing.Syntax.Declarations
         public IEnumerable<MethodDeclaration> Methods { get; }
         public IEnumerable<ConstructorDeclaration> Constructors { get; }
 
-        public ClassDeclaration(SourceFilePart filePart, 
-            string name,
-            IEnumerable<FieldDeclaration> fields,
-            IEnumerable<PropertyDeclaration> properties,
-            IEnumerable<MethodDeclaration> methods,
-            IEnumerable<ConstructorDeclaration> constructors
-            ) 
-            : base(filePart, name)
+        public ClassDeclaration(SourceFilePart span, string name, IEnumerable<ConstructorDeclaration> constructors,
+                                IEnumerable<FieldDeclaration> fields,
+                                IEnumerable<MethodDeclaration> methods,
+                                IEnumerable<PropertyDeclaration> properties)
+            : base(span, name)
         {
-            if (fields == null)
-                throw new ArgumentNullException(nameof(fields));
-
-            if (properties == null)
-                throw new ArgumentNullException(nameof(properties));
-
-            if (methods == null)
-                throw new ArgumentNullException(nameof(methods));
-
-            if (constructors == null)
-                throw new ArgumentNullException(nameof(constructors));
-
-            Fields = fields;
-            Properties = properties;
-            Methods = methods;
             Constructors = constructors;
+            Fields = fields;
+            Methods = methods;
+            Properties = properties;
+        }
+        public ClassDeclaration(SourceFilePart span, string name, IEnumerable<ConstructorDeclaration> constructors,
+                                IEnumerable<FieldDeclaration> fields,
+                                IEnumerable<MethodDeclaration> methods,
+                                IEnumerable<PropertyDeclaration> properties,
+                                Scope scope)
+            : base(span, name, scope)
+        {
+            Constructors = constructors;
+            Fields = fields;
+            Methods = methods;
+            Properties = properties;
+        }
+        public ClassDeclaration(ClassDeclaration declartion, Scope scope)
+            : this(declartion.FilePart, declartion.Name, declartion.Constructors,
+                  declartion.Fields, declartion.Methods, declartion.Properties,
+                  scope)
+        {
+
+        }
+        public ClassDeclaration(ClassDeclaration declartion, IEnumerable<FieldDeclaration> fields,
+            IEnumerable<PropertyDeclaration> properties, IEnumerable<MethodDeclaration> methods,
+            IEnumerable<ConstructorDeclaration> constructors, Scope scope)
+            : this(declartion.FilePart, declartion.Name, constructors,
+                  fields, methods, properties,
+                  scope)
+        {
+
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -9,18 +10,27 @@ namespace Compiler.Parsing.Syntax.Declarations
         public MethodDeclaration Setter { get; }
         public TypeDeclaration Type { get; }
 
-        public PropertyDeclaration(SourceFilePart filePart, string name, TypeDeclaration type, MethodDeclaration getter, MethodDeclaration setter = null) 
-            : base(filePart, name)
+        public PropertyDeclaration(SourceFilePart span, string name, TypeDeclaration type, MethodDeclaration getMethod, MethodDeclaration setMethod) : base(span, name)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            if (getter == null)
-                throw new ArgumentNullException(nameof(getter));
-
             Type = type;
-            Getter = getter;
-            Setter = setter;
+            Getter = getMethod;
+            Setter = setMethod;
+        }
+        public PropertyDeclaration(SourceFilePart span, string name, TypeDeclaration type, MethodDeclaration getMethod, MethodDeclaration setMethod, Scope scope) : base(span, name, scope)
+        {
+            Type = type;
+            Getter = getMethod;
+            Setter = setMethod;
+        }
+        public PropertyDeclaration(PropertyDeclaration declaration, Scope scope)
+            : this(declaration.FilePart, declaration.Name, declaration.Type, declaration.Getter, declaration.Setter, scope)
+        {
+
+        }
+        public PropertyDeclaration(PropertyDeclaration declaration, MethodDeclaration getMethod, MethodDeclaration setMethod, Scope scope)
+            : this(declaration.FilePart, declaration.Name, declaration.Type, getMethod, setMethod, scope)
+        {
+
         }
     }
 }

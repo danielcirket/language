@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Compiler.Parsing.Syntax.Declarations;
 using Compiler.Parsing.Syntax.Statements;
+using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax
 {
@@ -11,6 +12,7 @@ namespace Compiler.Parsing.Syntax
         public override SyntaxCategory Category => SyntaxCategory.SourceDocument;
         public IEnumerable<ImportStatement> Imports { get; }
         public IEnumerable<ModuleDeclaration> Modules { get; }
+        public Scope Scope { get; }
 
         public SourceDocument(SourceFilePart filePart, IEnumerable<ImportStatement> imports, IEnumerable<ModuleDeclaration> modules)
             : base(filePart)
@@ -23,6 +25,11 @@ namespace Compiler.Parsing.Syntax
 
             Imports = imports;
             Modules = modules;
+        }
+        public SourceDocument(SourceDocument sourceDocument, IEnumerable<ModuleDeclaration> modules, Scope scope)
+            : this(sourceDocument.FilePart, sourceDocument.Imports, modules)
+        {
+            Scope = scope;
         }
     }
 }
