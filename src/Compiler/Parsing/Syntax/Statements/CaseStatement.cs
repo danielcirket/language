@@ -6,7 +6,7 @@ namespace Compiler.Parsing.Syntax.Statements
 {
     internal class CaseStatement : Statement
     {
-        public override SyntaxKind Kind => throw new NotImplementedException();
+        public override SyntaxKind Kind => SyntaxKind.CaseStatement;
         public BlockStatement Body { get; }
         public IEnumerable<Expression> Cases { get; }
 
