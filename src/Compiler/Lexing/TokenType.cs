@@ -1,6 +1,6 @@
 ﻿namespace Compiler.Lexing
 {
-    internal enum TokenType
+    public enum TokenType
     {
         EOF,
         Error,
