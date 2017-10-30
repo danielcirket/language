@@ -49,6 +49,8 @@ namespace Compiler.Lexing
             {
                 case TokenType.LineComment:
                 case TokenType.BlockComment:
+                    return TokenCategory.Comment;
+
                 case TokenType.IntegerLiteral:
                 case TokenType.StringLiteral:
                 case TokenType.RealLiteral:
