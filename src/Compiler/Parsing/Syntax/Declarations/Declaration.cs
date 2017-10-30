@@ -7,7 +7,6 @@ namespace Compiler.Parsing.Syntax.Declarations
     {
         public override SyntaxCategory Category => SyntaxCategory.Declaration;
         public string Name { get; }
-        public Scope Scope { get; }
 
         protected Declaration(SourceFilePart filePart, string name)
             : base(filePart)
@@ -16,11 +15,6 @@ namespace Compiler.Parsing.Syntax.Declarations
                 throw new ArgumentNullException(nameof(name));
 
             Name = name;
-        }
-        protected Declaration(SourceFilePart span, string name, Scope scope) 
-            : this(span, name)
-        {
-            Scope = scope;
         }
     }
 }

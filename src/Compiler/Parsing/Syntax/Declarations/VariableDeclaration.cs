@@ -10,25 +10,17 @@ namespace Compiler.Parsing.Syntax.Declarations
         public TypeDeclaration Type { get; }
         public Expression Value { get; }
 
-        public VariableDeclaration(SourceFilePart span, string name, TypeDeclaration type, Expression value) : base(span, name)
+        public VariableDeclaration(SourceFilePart filePart, string name, TypeDeclaration type, Expression value)
+            : base(filePart, name)
         {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
             Type = type;
             Value = value;
-        }
-        public VariableDeclaration(SourceFilePart span, string name, TypeDeclaration type, Expression value, Scope scope) : base(span, name, scope)
-        {
-            Type = type;
-            Value = value;
-        }
-        public VariableDeclaration(VariableDeclaration declaration, Scope scope)
-            : this(declaration.FilePart, declaration.Name, declaration.Type, declaration.Value, scope)
-        {
-
-        }
-        public VariableDeclaration(VariableDeclaration declaration, Expression value, Scope scope)
-            : this(declaration.FilePart, declaration.Name, declaration.Type, value, scope)
-        {
-
         }
     }
 }

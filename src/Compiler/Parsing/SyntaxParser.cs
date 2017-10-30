@@ -330,7 +330,7 @@ namespace Compiler.Parsing
                 }
             }
 
-            // TODO(Dan): Maybe we should consider allowing non block scoped case bodies
+            // TODO(Dan): We aren't verifying that a break / return is used here...
             body = ParseStatementOrScope();
 
             return new CaseStatement(CreatePart(start.Start), conditions, body);
@@ -359,14 +359,13 @@ namespace Compiler.Parsing
                 {
                     if (Current == "class")
                     {
-                        throw new NotImplementedException();
-
-                        //classes.Add(ParseClassDeclaration());
+                        classes.Add(ParseClassDeclaration());
                     }
                     else
                     {
-                        // TODO(Dan): Module level method
-                        throw new NotImplementedException();
+                        var returnType = ParseTypeDeclaration();
+                        var name = ParseIdentifierName();
+                        methods.Add(ParseMethodDeclaration(name, returnType));
                     }
                 }
             });
@@ -404,7 +403,7 @@ namespace Compiler.Parsing
                 }
             });
 
-            return new ClassDeclaration(CreatePart(keyword.Start), name, constructors, fields, methods, properties);
+            return new ClassDeclaration(CreatePart(keyword.Start), name, fields, properties, methods, constructors);
         }
         private SyntaxNode ParseClassMember()
         {
@@ -438,7 +437,7 @@ namespace Compiler.Parsing
             var parameters = ParseParameters();
             var body = ParseScope();
 
-            return new ConstructorDeclaration(CreatePart(keyword.Start), parameters, body);
+            return new ConstructorDeclaration(CreatePart(keyword.Start), keyword.Value, parameters, body);
         }
         private MethodDeclaration ParseMethodDeclaration(string name, TypeDeclaration returnType)
         {
@@ -610,7 +609,7 @@ namespace Compiler.Parsing
         {
             var start = TakeKeyword("var");
             var name = ParseIdentifierName();
-            var type = new TypeDeclaration(null, "object"); // This will be inferred later
+            var type = TypeDeclaration.Empty;// This will be inferred later
             Expression value = null;
 
             if (Current == TokenType.Assignment)
@@ -1361,6 +1360,9 @@ namespace Compiler.Parsing
         {
             if (Current == TokenType.Identifier)
                 return Take(TokenType.Identifier).Value;
+
+            if (Current == TokenType.Keyword && new[] { "int", "string", "void", "float", "double", "decimal", "char" }.Contains(Current.Value))
+                return Take(TokenType.Keyword).Value;
 
             throw UnexpectedToken("Identifier");
         }

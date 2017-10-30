@@ -10,25 +10,15 @@ namespace Compiler.Parsing.Syntax.Declarations
         public Expression DefaultValue { get; }
         public TypeDeclaration Type { get; }
 
-        public FieldDeclaration(SourceFilePart span, string name, TypeDeclaration type, Expression value) : base(span, name)
+        public FieldDeclaration(SourceFilePart filePart, string name, TypeDeclaration type, Expression value)
+           : base(filePart, name)
         {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            // NOTE(Dan): Allow null default values, e.g. int _field; rather than int _field = 1; 
             Type = type;
             DefaultValue = value;
-        }
-        public FieldDeclaration(SourceFilePart span, string name, TypeDeclaration type, Expression value, Scope scope) : base(span, name, scope)
-        {
-            Type = type;
-            DefaultValue = value;
-        }
-        public FieldDeclaration(FieldDeclaration declaration, Scope scope)
-            : this(declaration.FilePart, declaration.Name, declaration.Type, declaration.DefaultValue, scope)
-        {
-
-        }
-        public FieldDeclaration(FieldDeclaration declaration, Expression defaultValue, Scope scope)
-            : this(declaration.FilePart, declaration.Name, declaration.Type, defaultValue, scope)
-        {
-
         }
     }
 }

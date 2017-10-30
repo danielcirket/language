@@ -254,7 +254,7 @@ namespace Compiler.Parsing
         protected abstract void VisitReturn(ReturnStatement statement);
     }
 
-    internal abstract class SyntaxVisitor<T>
+    internal abstract class SyntaxVisitor<T> where T : SyntaxNode
     {
         public T Visit(SyntaxNode node)
         {

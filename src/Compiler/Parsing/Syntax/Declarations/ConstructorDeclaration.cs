@@ -11,26 +11,17 @@ namespace Compiler.Parsing.Syntax.Declarations
         public BlockStatement Body { get; }
         public IEnumerable<ParameterDeclaration> Parameters { get; }
 
-        public ConstructorDeclaration(SourceFilePart span, IEnumerable<ParameterDeclaration> parameters, BlockStatement body) : base(span, "constructor")
+        public ConstructorDeclaration(SourceFilePart filePart, string name, IEnumerable<ParameterDeclaration> parameters, BlockStatement body)
+            : base(filePart, name)
         {
-            Body = body;
-            Parameters = parameters;
-        }
-        public ConstructorDeclaration(SourceFilePart span, IEnumerable<ParameterDeclaration> parameters, BlockStatement body, Scope scope)
-            : base(span, "constructor", scope)
-        {
-            Body = body;
-            Parameters = parameters;
-        }
-        public ConstructorDeclaration(ConstructorDeclaration declaration, Scope scope)
-            : this(declaration.FilePart, declaration.Parameters, declaration.Body, scope)
-        {
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
-        }
-        public ConstructorDeclaration(ConstructorDeclaration declaration, IEnumerable<ParameterDeclaration> parameters, BlockStatement body, Scope scope)
-            : this(declaration.FilePart, declaration.Parameters, body, scope)
-        {
+            if (body == null)
+                throw new ArgumentNullException(nameof(body));
 
+            Parameters = parameters;
+            Body = body;
         }
     }
 }

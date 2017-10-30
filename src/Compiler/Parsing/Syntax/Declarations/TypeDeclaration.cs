@@ -2,7 +2,7 @@
 {
     internal class TypeDeclaration : Declaration
     {
-        // TODO(Dan): Fully qualified name
+        public static TypeDeclaration Empty => new TypeDeclaration(new SourceFilePart(null, null, null, null), "?");
         public override SyntaxKind Kind => SyntaxKind.TypeDeclaration;
 
         public TypeDeclaration(SourceFilePart filePart, string name) 
