@@ -380,7 +380,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '>')
                     {
                         Consume();
-                        CreateToken(TokenType.BitShiftRight);
+                        return CreateToken(TokenType.BitShiftRight);
                     }
                     return CreateToken(TokenType.GreaterThan);
 
@@ -394,7 +394,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '<')
                     {
                         Consume();
-                        CreateToken(TokenType.BitShiftLeft);
+                        return CreateToken(TokenType.BitShiftLeft);
                     }
                     return CreateToken(TokenType.LessThan);
 
@@ -408,7 +408,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '+')
                     {
                         Consume();
-                        CreateToken(TokenType.PlusPlus);
+                        return CreateToken(TokenType.PlusPlus);
                     }
                     return CreateToken(TokenType.Plus);
 
@@ -422,7 +422,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '-')
                     {
                         Consume();
-                        CreateToken(TokenType.MinusMinus);
+                        return CreateToken(TokenType.MinusMinus);
                     }
                     return CreateToken(TokenType.Minus);
 
@@ -436,7 +436,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '>')
                     {
                         Consume();
-                        CreateToken(TokenType.FatArrow);
+                        return CreateToken(TokenType.FatArrow);
                     }
                     return CreateToken(TokenType.Assignment);
 
@@ -445,7 +445,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
-                        CreateToken(TokenType.NotEqual);
+                        return CreateToken(TokenType.NotEqual);
                     }
                     return CreateToken(TokenType.Not);
 
@@ -454,7 +454,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
-                        CreateToken(TokenType.MulEqual);
+                        return CreateToken(TokenType.MulEqual);
                     }
                     return CreateToken(TokenType.Mul);
 
@@ -463,7 +463,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
-                        CreateToken(TokenType.DivEqual);
+                        return CreateToken(TokenType.DivEqual);
                     }
                     return CreateToken(TokenType.Div);
 
@@ -472,7 +472,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
-                        CreateToken(TokenType.ModEqual);
+                        return CreateToken(TokenType.ModEqual);
                     }
                     return CreateToken(TokenType.Mod);
 
@@ -481,7 +481,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
-                        CreateToken(TokenType.BitwiseXorEqual);
+                        return CreateToken(TokenType.BitwiseXorEqual);
                     }
                     return CreateToken(TokenType.BitwiseXor);
 
@@ -490,7 +490,7 @@ namespace Compiler.Lexing
                     if (!IsEOF() && Current == '?')
                     {
                         Consume();
-                        CreateToken(TokenType.DoubleQuestion);
+                        return CreateToken(TokenType.DoubleQuestion);
                     }
                     return CreateToken(TokenType.Question);
 
@@ -518,7 +518,7 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '|')
                     {
                         Consume();
-                        CreateToken(TokenType.BooleanOr);
+                        return CreateToken(TokenType.BooleanOr);
                     }
                     return CreateToken(TokenType.BitwiseOr);
 
