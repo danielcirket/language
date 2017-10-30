@@ -376,35 +376,47 @@ namespace Tokenize.Tests
             public class Punctuation
             {
                 [Theory]
-                [InlineData("<")]
-                [InlineData(">")]
-                [InlineData("{")]
-                [InlineData("}")]
-                [InlineData("(")]
-                [InlineData(")")]
-                [InlineData("[")]
-                [InlineData("]")]
-                [InlineData("!")]
-                [InlineData("%")]
-                [InlineData("^")]
-                [InlineData("&")]
-                [InlineData("*")]
-                [InlineData("+")]
-                [InlineData("-")]
-                [InlineData("=")]
-                [InlineData("/")]
-                [InlineData(".")]
-                [InlineData(",")]
-                [InlineData("?")]
-                [InlineData(";")]
-                [InlineData(":")]
-                [InlineData("|")]
-                public void WhenContentIsValidPuncuationThenShouldReturnMatchingTokenTypeAndEOF(string input)
+                [InlineData("<", TokenType.LessThan)]
+                [InlineData("<<", TokenType.BitShiftLeft)]
+                [InlineData(">", TokenType.GreaterThan)]
+                [InlineData(">>", TokenType.BitShiftRight)]
+                [InlineData("{", TokenType.LeftBracket)]
+                [InlineData("}", TokenType.RightBracket)]
+                [InlineData("(", TokenType.LeftParenthesis)]
+                [InlineData(")", TokenType.RightParenthesis)]
+                [InlineData("[", TokenType.LeftBrace)]
+                [InlineData("]", TokenType.RightBrace)]
+                [InlineData("!", TokenType.Not)]
+                [InlineData("%", TokenType.Mod)]
+                [InlineData("%=", TokenType.ModEqual)]
+                [InlineData("^", TokenType.BitwiseXor)]
+                [InlineData("^=", TokenType.BitwiseXorEqual)]
+                [InlineData("&", TokenType.BitwiseAnd)]
+                [InlineData("&=", TokenType.BitwiseAndEqual)]
+                [InlineData("*", TokenType.Mul)]
+                [InlineData("+", TokenType.Plus)]
+                [InlineData("++", TokenType.PlusPlus)]
+                [InlineData("-", TokenType.Minus)]
+                [InlineData("--", TokenType.MinusMinus)]
+                [InlineData("=", TokenType.Assignment)]
+                [InlineData("==", TokenType.Equal)]
+                [InlineData("+=", TokenType.PlusEqual)]
+                [InlineData("-=", TokenType.MinusEqual)]
+                [InlineData("/", TokenType.Div)]
+                [InlineData("/=", TokenType.DivEqual)]
+                [InlineData(".", TokenType.Dot)]
+                [InlineData(",", TokenType.Comma)]
+                [InlineData("?", TokenType.Question)]
+                [InlineData(";", TokenType.Semicolon)]
+                [InlineData(":", TokenType.Colon)]
+                [InlineData("|", TokenType.BitwiseOr)]
+                [InlineData("|=", TokenType.BitwiseOrEqual)]
+                public void WhenContentIsValidPuncuationThenShouldReturnMatchingTokenTypeAndEOF(string input, TokenType expected)
                 {
                     var result = CreateDefaultTokenizer().Tokenize(input).ToList();
 
                     result.Count.Should().Be(2);
-                    result.First().TokenType.Should().Be(GetMatchingTokenType(input));
+                    result.First().TokenType.Should().Be(expected);
                     result.First().Value.Should().Be(input);
                     result.Last().TokenType.Should().Be(TokenType.EOF);
                 }
@@ -417,61 +429,6 @@ namespace Tokenize.Tests
                     result.Count.Should().Be(2);
                     result.First().TokenType.Should().Be(TokenType.Error);
                     result.Last().TokenType.Should().Be(TokenType.EOF);
-                }
-
-                private TokenType GetMatchingTokenType(string input)
-                {
-                    switch (input)
-                    {
-                        case "<":
-                            return TokenType.LessThan;
-                        case ">":
-                            return TokenType.GreaterThan;
-                        case "{":
-                            return TokenType.LeftBracket;
-                        case "}":
-                            return TokenType.RightBracket;
-                        case "(":
-                            return TokenType.LeftParenthesis;
-                        case ")":
-                            return TokenType.RightParenthesis;
-                        case "[":
-                            return TokenType.LeftBrace;
-                        case "]":
-                            return TokenType.RightBrace;
-                        case "!":
-                            return TokenType.Not;
-                        case "%":
-                            return TokenType.Mod;
-                        case "^":
-                            return TokenType.BitwiseXor;
-                        case "&":
-                            return TokenType.BitwiseAnd;
-                        case "*":
-                            return TokenType.Mul;
-                        case "+":
-                            return TokenType.Plus;
-                        case "-":
-                            return TokenType.Minus;
-                        case "=":
-                            return TokenType.Assignment;
-                        case "/":
-                            return TokenType.Div;
-                        case ".":
-                            return TokenType.Dot;
-                        case ",":
-                            return TokenType.Comma;
-                        case "?":
-                            return TokenType.Question;
-                        case ";":
-                            return TokenType.Semicolon;
-                        case ":":
-                            return TokenType.Colon;
-                        case "|":
-                            return TokenType.BitwiseOr;
-                        default:
-                            throw new Exception("Matching punctuation token type not found");
-                    }
                 }
             }
         }
