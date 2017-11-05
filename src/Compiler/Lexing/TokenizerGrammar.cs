@@ -28,6 +28,7 @@ namespace Compiler.Lexing
                 new TokenMatch(TokenType.Keyword, "do"),
                 new TokenMatch(TokenType.Keyword, "for"),
                 new TokenMatch(TokenType.Keyword, "var"),
+                new TokenMatch(TokenType.Keyword, "mut"),
                 new TokenMatch(TokenType.Keyword, "true"),
                 new TokenMatch(TokenType.Keyword, "false"),
                 new TokenMatch(TokenType.Keyword, "int"),

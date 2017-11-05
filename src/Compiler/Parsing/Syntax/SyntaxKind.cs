@@ -36,6 +36,9 @@
         ContinueStatement,
         ForStatement,
         ReturnStatement,
-        SourceDocument
+        SourceDocument,
+        Attribute,
+        EnumDeclaration,
+        EnumMemberDeclaration
     }
 }

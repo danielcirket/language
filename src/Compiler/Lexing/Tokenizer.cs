@@ -141,7 +141,7 @@ namespace Compiler.Lexing
             if (!IsEOF() && (Current == 'f' || Current == 'F' || Current == 'd' || Current == 'D' || Current == 'm' || Current == 'M' || Current == '.' || Current == 'e'))
                 return Real();
 
-            if (!IsEOF() && !Current.IsWhiteSpace() && !Current.IsPunctuation())
+            if (!IsEOF() && !Current.IsNewLine() && !Current.IsWhiteSpace() && !Current.IsPunctuation())
                 return Error();
 
             return CreateToken(TokenType.IntegerLiteral);
@@ -252,9 +252,6 @@ namespace Compiler.Lexing
         {
             while (!IsEOF() && Current.IsIdentifier())
                 Consume();
-
-            if (!IsEOF() && !Current.IsWhiteSpace() && !Current.IsPunctuation())
-                return Error();
 
             if (_builder.ToString().IsKeyword(_keywords))
                 return CreateToken(TokenType.Keyword);

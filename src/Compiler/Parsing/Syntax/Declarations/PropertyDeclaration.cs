@@ -15,9 +15,6 @@ namespace Compiler.Parsing.Syntax.Declarations
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (getter == null)
-                throw new ArgumentNullException(nameof(getter));
-
             Type = type;
             Getter = getter;
             Setter = setter;

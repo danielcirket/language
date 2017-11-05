@@ -26,15 +26,15 @@ namespace Compiler
         }
         public static bool IsWhiteSpace(this char source)
         {
-            return char.IsWhiteSpace(source);
-        }
-        public static bool IsIdentifier(this char source)
-        {
-            return source.IsLetterOrDigit() || source == '_';
+            return (char.IsWhiteSpace(source) || source.IsEOF()) && !source.IsNewLine();
         }
         public static bool IsPunctuation(this char source)
         {
             return "<>{}()[]!%^&*+-=/.,?;:|".Contains(source);
+        }
+        public static bool IsIdentifier(this char source)
+        {
+            return source.IsLetterOrDigit() || source == '_';
         }
     }
 }

@@ -13,5 +13,13 @@ namespace Compiler
 
             return keywords.Contains(source);
         }
+
+        public static string FirstToLower(this string source)
+        {
+            if (string.IsNullOrEmpty(source) || source.Length < 1 || char.IsLower(source, 0))
+                return source;
+
+            return char.ToLower(source[0]) + source.Substring(1);
+        }
     }
 }

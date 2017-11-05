@@ -324,6 +324,8 @@ namespace Tokenize.Tests
                     result.First().Value.Should().Be(input);
                     result.Last().TokenType.Should().Be(TokenType.EOF);
                 }
+
+                // TODO(Dan): Add test for 'module Some.Module' followed by newline and '{'
             }
             public class Keyword
             {

@@ -1,5 +1,6 @@
 ﻿using System;
-using Compiler.Semantics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -7,6 +8,7 @@ namespace Compiler.Parsing.Syntax.Declarations
     {
         public override SyntaxCategory Category => SyntaxCategory.Declaration;
         public string Name { get; }
+        public IEnumerable<AttributeSyntax> Attributes { get; }
 
         protected Declaration(SourceFilePart filePart, string name)
             : base(filePart)
@@ -15,6 +17,15 @@ namespace Compiler.Parsing.Syntax.Declarations
                 throw new ArgumentNullException(nameof(name));
 
             Name = name;
+            Attributes = Enumerable.Empty<AttributeSyntax>();
+        }
+        protected Declaration(SourceFilePart filePart, string name, IEnumerable<AttributeSyntax> attributes)
+            : this(filePart, name)
+        {
+            if (attributes == null)
+                throw new ArgumentNullException(nameof(attributes));
+
+            Attributes = attributes;
         }
     }
 }

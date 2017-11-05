@@ -6,6 +6,7 @@
         Expression,
         Statement,
         Declaration,
-        SourceDocument
+        SourceDocument,
+        AttributeUsage
     }
 }

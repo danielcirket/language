@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.15
+VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{874D0E74-85DB-4BC6-9ACD-533D8EB8F0D6}"
 	ProjectSection(SolutionItems) = preProject
@@ -19,7 +19,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{087C47A5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tokenizer.Tests", "tests\Tokenizer.Tests\Tokenizer.Tests.csproj", "{C181F6D7-E911-4AB1-B4D1-9A5EAEC6D934}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parser.Tests", "tests\Parser.Tests\Parser.Tests.csproj", "{659656F6-A177-4D2F-AD7D-9462C7F51052}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Parser.Tests", "tests\Parser.Tests\Parser.Tests.csproj", "{659656F6-A177-4D2F-AD7D-9462C7F51052}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{2C3A25B1-659E-4451-B169-D32726C7AFC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "samples\Sample\Sample.csproj", "{5AAA62F1-DDE4-4B74-BF84-065552311F15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,10 @@ Global
 		{659656F6-A177-4D2F-AD7D-9462C7F51052}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{659656F6-A177-4D2F-AD7D-9462C7F51052}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{659656F6-A177-4D2F-AD7D-9462C7F51052}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AAA62F1-DDE4-4B74-BF84-065552311F15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AAA62F1-DDE4-4B74-BF84-065552311F15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AAA62F1-DDE4-4B74-BF84-065552311F15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AAA62F1-DDE4-4B74-BF84-065552311F15}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -47,5 +55,9 @@ Global
 		{9A99E08B-D7EC-47F3-8695-B786ED6FEB9E} = {4506D100-569B-4A3B-98E5-1BDF2C30A382}
 		{C181F6D7-E911-4AB1-B4D1-9A5EAEC6D934} = {087C47A5-1F58-48FE-9752-2A55373EBEC2}
 		{659656F6-A177-4D2F-AD7D-9462C7F51052} = {087C47A5-1F58-48FE-9752-2A55373EBEC2}
+		{5AAA62F1-DDE4-4B74-BF84-065552311F15} = {2C3A25B1-659E-4451-B169-D32726C7AFC9}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CCAD7F0E-1089-49E1-A411-35FCCA8672C2}
 	EndGlobalSection
 EndGlobal

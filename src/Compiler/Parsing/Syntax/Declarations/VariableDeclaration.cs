@@ -1,6 +1,5 @@
 ﻿using System;
 using Compiler.Parsing.Syntax.Expressions;
-using Compiler.Semantics;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -9,8 +8,9 @@ namespace Compiler.Parsing.Syntax.Declarations
         public override SyntaxKind Kind => SyntaxKind.VariableDeclaration;
         public TypeDeclaration Type { get; }
         public Expression Value { get; }
+        public VariableMutabilityType MutabilityType { get; }
 
-        public VariableDeclaration(SourceFilePart filePart, string name, TypeDeclaration type, Expression value)
+        public VariableDeclaration(SourceFilePart filePart, string name, TypeDeclaration type, Expression value, VariableMutabilityType variableMutabilityType)
             : base(filePart, name)
         {
             if (type == null)
@@ -21,6 +21,7 @@ namespace Compiler.Parsing.Syntax.Declarations
 
             Type = type;
             Value = value;
+            MutabilityType = variableMutabilityType;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Compiler.Parsing
             _currentSourceFile = sourceFile;
             _tokens = _tokenizer.Tokenize(sourceFile).Where(token => !token.IsTrivia()).ToList();
 
-            // TODO(Dan): If we have errors already just bail? Perhaps we want to actually try parsing instead?
+            // NOTE(Dan): If we have errors already just bail? Perhaps we want to actually try parsing instead?
             if (_errorSink.HasErrors)
                 return null;
 
@@ -65,6 +65,56 @@ namespace Compiler.Parsing
                 AddError("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file", CreatePart(Current.Start, _tokens.Last().End), Severity.Error);
 
             return new SourceDocument(CreatePart(start), imports, modules);
+        }
+        private IEnumerable<AttributeSyntax> ParseAttributes()
+        {
+            var attributes = new List<AttributeSyntax>();
+
+            Take(TokenType.LeftBrace);
+
+            attributes.Add(ParseAttribute());
+
+            while(Current != TokenType.RightBrace)
+            {
+                if (Current == TokenType.Comma)
+                {
+                    Take(TokenType.Comma);
+                    attributes.Add(ParseAttribute());
+                }
+            }
+
+            Take(TokenType.RightBrace);
+
+            return attributes;
+        }
+        private AttributeSyntax ParseAttribute()
+        {
+            // [Attribute]
+            // [Attribute(/* constructor params */)]
+            var start = Current.Start;
+            var type = Take(TokenType.Identifier);
+            var args = new List<Expression>();
+
+            if (Current == TokenType.LeftParenthesis)
+            {
+                MakeBlock(() =>
+                {
+                    if (Current != TokenType.RightParenthesis)
+                    {
+                        args.Add(ParseExpression());
+
+                        while (Current == TokenType.Comma)
+                        {
+                            Take(TokenType.Comma);
+                            args.Add(ParseExpression());
+                        }
+                    }
+                }, 
+                TokenType.LeftParenthesis,
+                TokenType.RightParenthesis);
+            }
+
+            return new AttributeSyntax(CreatePart(type.Start), type.Value, args);
         }
 
         // Statements
@@ -123,7 +173,7 @@ namespace Compiler.Parsing
 
             if (Current == TokenType.Keyword)
             {
-                switch(Current.Value)
+                switch (Current.Value)
                 {
                     case "true":
                     case "false":
@@ -343,6 +393,7 @@ namespace Compiler.Parsing
 
             var moduleNameParts = new List<IdentifierExpression>();
             var classes = new List<ClassDeclaration>();
+            var enums = new List<EnumDeclaration>();
             var methods = new List<MethodDeclaration>();
 
             while (Current == TokenType.Identifier)
@@ -355,11 +406,15 @@ namespace Compiler.Parsing
 
             MakeBlock(() =>
             {
-                while (Current == "class" || Current == TokenType.Identifier)
+                while (Current == "class" || Current == "enum" || Current == TokenType.LeftBrace || Current == TokenType.Identifier || Current == TokenType.Keyword)
                 {
-                    if (Current == "class")
+                    if (Current == "class" || Current == TokenType.LeftBrace)
                     {
                         classes.Add(ParseClassDeclaration());
+                    }
+                    else if (Current == "enum")
+                    {
+                        enums.Add(ParseEnumDeclaration());
                     }
                     else
                     {
@@ -370,14 +425,18 @@ namespace Compiler.Parsing
                 }
             });
 
-            return new ModuleDeclaration(CreatePart(keyword.Start), string.Join(".", moduleNameParts.Select(identifier => identifier.Name)), classes, methods);
+            return new ModuleDeclaration(CreatePart(keyword.Start), string.Join(".", moduleNameParts.Select(identifier => identifier.Name)), classes, methods, enums);
         }
         private ClassDeclaration ParseClassDeclaration()
         {
+            var attributes = new List<AttributeSyntax>();
             var constructors = new List<ConstructorDeclaration>();
             var fields = new List<FieldDeclaration>();
             var methods = new List<MethodDeclaration>();
             var properties = new List<PropertyDeclaration>();
+
+            while(Current == TokenType.LeftBrace)
+                attributes.AddRange(ParseAttributes());
 
             var keyword = TakeKeyword("class");
             var name = ParseIdentifierName();
@@ -386,7 +445,7 @@ namespace Compiler.Parsing
             {
                 var member = ParseClassMember();
 
-                switch(member)
+                switch (member)
                 {
                     case ConstructorDeclaration constructor:
                         constructors.Add(constructor);
@@ -413,7 +472,7 @@ namespace Compiler.Parsing
             var returnType = ParseTypeDeclaration();
             var name = ParseIdentifierName();
 
-            switch(Current.Value)
+            switch (Current.Value)
             {
                 case "{":
                 case "=>":
@@ -446,8 +505,11 @@ namespace Compiler.Parsing
 
             if (Current == TokenType.FatArrow)
             {
-                // TODO(Dan): Allow C# style expression bodied methods
-                throw UnexpectedToken("{");
+                var method = ParseExpressionBodiedMember(name, returnType, parameters);
+
+                TakeSemicolon();
+
+                return method;
             }
 
             var body = ParseScope();
@@ -479,76 +541,100 @@ namespace Compiler.Parsing
 
             if (Current == TokenType.FatArrow)
             {
-                // TODO(Dan): Allow C# style expression bodied properties
-                throw UnexpectedToken("{");
+                getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                TakeSemicolon();
             }
-
-            MakeBlock(() =>
+            else
             {
-                switch (Current.Value)
+
+                MakeBlock(() =>
                 {
-                    case "get":
-                        {
-                            var get = Take();
-
-                            switch (Current.TokenType)
+                    switch (Current.Value)
+                    {
+                        case "get":
                             {
-                                // TODO(Dan): Allow { get; set; }
-                                case TokenType.Semicolon:
-                                    throw UnexpectedToken("Bodyless property getter not yet supported");
+                                var get = Take();
 
-                                // TODO(Dan): Allow { get => _value; }
-                                case TokenType.FatArrow:
-                                    throw UnexpectedToken("Expression bodied getter not yet supported");
+                                switch (Current.TokenType)
+                                {
+                                    // TODO(Dan): Allow { get; set; }
+                                    case TokenType.Semicolon:
+                                        {
+                                            //var part = CreatePart(get.Start);
+                                            //// TODO(Dan): Need to add this compiler generated field to the AST
+                                            //var backingField = new FieldDeclaration(part, $"_{name.FirstToLower()}", returnType, null);
+                                            //var body = new BlockStatement(part, new[] { new ReturnStatement(CreatePart(get.Start), new IdentifierExpression(part, $"_{name.ToLower()}")) });
+                                            //getMethod = new MethodDeclaration(part, $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body, new[] { new AttributeSyntax("CompilerGenerated", new SourceFilePart()) });
+                                            TakeSemicolon();
+                                            break;
+                                        }
+                                        
+                                    case TokenType.FatArrow:
+                                        {
+                                            getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                                            TakeSemicolon();
+                                            break;
+                                        }
 
-                                default:
-                                    {
-                                        var body = ParseScope();
+                                    default:
+                                        {
+                                            var body = ParseScope();
 
-                                        if (getMethod != null)
-                                            AddError($"Multiple getters for property: {name}", CreatePart(get.Start), Severity.Error);
-                                        else
-                                            getMethod = new MethodDeclaration(CreatePart(get.Start), $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body);
+                                            if (getMethod != null)
+                                                AddError($"Multiple getters for property: {name}", CreatePart(get.Start), Severity.Error);
+                                            else
+                                                getMethod = new MethodDeclaration(CreatePart(get.Start), $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body);
 
+                                        }
+                                        break;
                                     }
-                                    break;
+
+                                break;
                             }
-
-                            break;
-                        }
-                    case "set":
-                        {
-                            var set = Take();
-
-                            switch (Current.TokenType)
+                        case "set":
                             {
-                                // TODO(Dan): Allow { get; set; }
-                                case TokenType.Semicolon:
-                                    throw UnexpectedToken("Bodyless property setter not yet supported");
+                                var set = Take();
 
-                                // TODO(Dan): Allow { get => _value; set => _value = value; }
-                                case TokenType.FatArrow:
-                                    throw UnexpectedToken("Expression bodied getter not yet supported");
+                                switch (Current.TokenType)
+                                {
+                                    case TokenType.Semicolon:
+                                        {
+                                            //var part = CreatePart(set.Start);
+                                            //var backingField = new FieldDeclaration(part, $"_{name.FirstToLower()}", returnType, null);
+                                            //var body = new BlockStatement(part, new[] { new BinaryExpression(part, new IdentifierExpression(part, backingField.Name), new IdentifierExpression(part, "value"), BinaryOperator.Assign) });
+                                            //var methodDeclaration = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(new SourceFilePart(null, null, null, null), "void"), new[] { new ParameterDeclaration(part, "value", returnType) }, body);
+                                            TakeSemicolon();
+                                            break;
+                                        }
 
-                                default:
-                                    {
-                                        var body = ParseScope();
+                                    // TODO(Dan): Allow { get => _value; set => _value = value; }
+                                    case TokenType.FatArrow:
+                                        {
+                                            setMethod = ParseExpressionBodiedMember($"set_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                                            TakeSemicolon();
+                                            break;
+                                        }
 
-                                        if (getMethod != null)
-                                            AddError($"Multiple getters for property: {name}", CreatePart(set.Start), Severity.Error);
-                                        else
-                                            setMethod = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(null, "void"), new[] { new ParameterDeclaration(CreatePart(set.Start), "value", returnType) }, body);
+                                    default:
+                                        {
+                                            var body = ParseScope();
 
-                                    }
-                                    break;
+                                            if (getMethod != null)
+                                                AddError($"Multiple getters for property: {name}", CreatePart(set.Start), Severity.Error);
+                                            else
+                                                setMethod = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(new SourceFilePart(null, null, null, null), "void"), new[] { new ParameterDeclaration(CreatePart(set.Start), "value", returnType) }, body);
+
+                                        }
+                                        break;
+                                }
+
+                                break;
                             }
-
-                            break;
-                        }
-                    default:
-                        throw UnexpectedToken("get or set");
-                }
-            });
+                        default:
+                            throw UnexpectedToken("get or set");
+                    }
+                });
+            }
 
             if (Current == TokenType.Semicolon)
             {
@@ -556,8 +642,8 @@ namespace Compiler.Parsing
                 AddError("Possibly mistaken empty statement", CreatePart(semicolon.Start, semicolon.End), Severity.Warning);
             }
 
-            if (getMethod == null)
-                AddError($"Property '{name}' does not have a getter", CreatePart(token.Start), Severity.Error);
+            //if (getMethod == null)
+            //    AddError($"Property '{name}' does not have a getter", CreatePart(token.Start), Severity.Error);
 
             return new PropertyDeclaration(CreatePart(token.Start), name, returnType, getMethod, setMethod);
         }
@@ -589,7 +675,7 @@ namespace Compiler.Parsing
 
                 parameters.Add(ParseParameterDeclaration());
 
-                while(Current == TokenType.Comma)
+                while (Current == TokenType.Comma)
                 {
                     Take(TokenType.Comma);
                     parameters.Add(ParseParameterDeclaration());
@@ -608,6 +694,11 @@ namespace Compiler.Parsing
         private VariableDeclaration ParseVariableDeclaration()
         {
             var start = TakeKeyword("var");
+            var isMutable = Peek(1) == "mut";
+
+            if (isMutable)
+                TakeKeyword("mut");
+            
             var name = ParseIdentifierName();
             var type = TypeDeclaration.Empty;// This will be inferred later
             Expression value = null;
@@ -619,7 +710,11 @@ namespace Compiler.Parsing
                 value = ParseExpression();
             }
 
-            return new VariableDeclaration(CreatePart(start.Start), name, type, value);
+            var mutabilityType = isMutable
+                ? VariableMutabilityType.Mutable
+                : VariableMutabilityType.Immutable;
+
+            return new VariableDeclaration(CreatePart(start.Start), name, type, value, mutabilityType);
         }
         private MethodDeclaration ParseExpressionBodiedMember(string methodName, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters)
         {
@@ -635,6 +730,46 @@ namespace Compiler.Parsing
 
             return new MethodDeclaration(span, methodName, returnType, parameters, new BlockStatement(span, new[] { (SyntaxNode)returnStatement ?? expression }));
         }
+        private EnumDeclaration ParseEnumDeclaration()
+        {
+            var attributes = new List<AttributeSyntax>();
+
+            while(Current == TokenType.LeftBrace)
+                attributes.AddRange(ParseAttributes());
+
+            var start = TakeKeyword("enum");
+            var name = ParseIdentifierName();
+            var members = new List<EnumMemberDeclaration>();
+
+            MakeBlock(() =>
+            {
+                members.Add(ParseEnumMemberDeclaration());
+
+                if (Current == TokenType.Comma && Next != TokenType.RightBracket)
+                    Take(TokenType.Comma);
+            });
+
+            return new EnumDeclaration(CreatePart(start.Start), name, members, attributes);
+        }
+        private EnumMemberDeclaration ParseEnumMemberDeclaration()
+        {
+            var attributes = new List<AttributeSyntax>();
+
+            while (Current == TokenType.LeftBrace)
+                attributes.AddRange(ParseAttributes());
+
+            var name = Take(TokenType.Identifier);
+            Expression value = null;
+
+            if (Current == TokenType.Assignment)
+            {
+                Take(TokenType.Assignment);
+                value = ParseExpression();
+            }
+
+            return new EnumMemberDeclaration(CreatePart(name.Start), name.Value, value, attributes);
+        }
+
         // TODO(Dan): Enums
 
         // Expressions - Urgh make sure I get the precedence right here...
@@ -1353,7 +1488,9 @@ namespace Compiler.Parsing
         }
         private SourceFilePart CreatePart(SourceFileLocation start, SourceFileLocation end)
         {
-            var content = _currentSourceFile.Lines.Skip(start.LineNumber - 1).Take(end.LineNumber - 1).ToArray();
+            var skip = start.LineNumber - 1;
+            var take = (end.LineNumber - start.LineNumber) < 1 ? 1 : (end.LineNumber - start.LineNumber);
+            var content = _currentSourceFile.Lines.Skip(start.LineNumber - 1).Take(take).ToArray();
             return new SourceFilePart(_currentSourceFile.Name, start, end, content);
         }
         private string ParseIdentifierName()

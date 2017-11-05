@@ -27,5 +27,21 @@ namespace Compiler.Parsing.Syntax.Declarations
             Parameters = parameters;
             Body = body;
         }
+        public MethodDeclaration(SourceFilePart filePart, string name, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters, BlockStatement body, IEnumerable<AttributeSyntax> attributes)
+            : base(filePart, name, attributes)
+        {
+            if (returnType == null)
+                throw new ArgumentNullException(nameof(returnType));
+
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
+
+            if (body == null)
+                throw new ArgumentNullException(nameof(body));
+
+            ReturnType = returnType;
+            Parameters = parameters;
+            Body = body;
+        }
     }
 }

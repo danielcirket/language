@@ -9,6 +9,11 @@ namespace Compiler
         public SourceFileLocation End { get; }
         public IEnumerable<string> Lines { get; }
 
+        internal SourceFilePart()
+        {
+
+        }
+
         public SourceFilePart(string path, SourceFileLocation start, SourceFileLocation end, IEnumerable<string> lines)
         {
             FilePath = path;
@@ -16,5 +21,6 @@ namespace Compiler
             End = end;
             Lines = lines;
         }
+
     }
 }
