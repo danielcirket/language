@@ -55,14 +55,14 @@ namespace Compiler.Parsing
 
             var start = Current.Start;
 
-            while (Current == "import")
+            while (Current == TokenType.ImportKeyword)
                 imports.Add(ParseImportStatement());
 
-            while (Current == "module")
+            while (Current == TokenType.ModuleKeyword)
                 modules.Add(ParseModuleDeclaration());
 
             if (Current != TokenType.EOF)
-                AddError("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file", CreatePart(Current.Start, _tokens.Last().End), Severity.Error);
+                AddError("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file", Last, CreatePart(Current.Start, _tokens.Last().End), Severity.Error);
 
             return new SourceDocument(CreatePart(start), imports, modules);
         }
@@ -70,21 +70,27 @@ namespace Compiler.Parsing
         {
             var attributes = new List<AttributeSyntax>();
 
-            Take(TokenType.LeftBrace);
+            if (Current != TokenType.LeftBrace)
+                return attributes;
 
-            attributes.Add(ParseAttribute());
-
-            while(Current != TokenType.RightBrace)
+            while (Current == TokenType.LeftBrace)
             {
-                if (Current == TokenType.Comma)
+                Take(TokenType.LeftBrace);
+
+                attributes.Add(ParseAttribute());
+
+                while (Current != TokenType.RightBrace)
                 {
-                    Take(TokenType.Comma);
-                    attributes.Add(ParseAttribute());
+                    if (Current == TokenType.Comma)
+                    {
+                        Take(TokenType.Comma);
+                        attributes.Add(ParseAttribute());
+                    }
                 }
+
+                Take(TokenType.RightBrace);
             }
-
-            Take(TokenType.RightBrace);
-
+            
             return attributes;
         }
         private AttributeSyntax ParseAttribute()
@@ -116,11 +122,55 @@ namespace Compiler.Parsing
 
             return new AttributeSyntax(CreatePart(type.Start), type.Value, args);
         }
+        private IEnumerable<IdentifierExpression> ParseBaseInheritors()
+        {
+            Take(TokenType.Colon);
+
+            var identifiers = new List<IdentifierExpression>();
+            var start = ParseIdentifierExpression();
+
+            identifiers.Add((IdentifierExpression)start);
+
+            while (Current == TokenType.Comma)
+            {
+                var comma = Take(TokenType.Comma);
+
+                if (Current != TokenType.Identifier)
+                {
+                    AddError($"Type expected", Current, CreatePart(comma.Start), Severity.Warning);
+                    continue;
+                }
+
+                identifiers.Add((IdentifierExpression)ParseIdentifierExpression());
+            }
+
+            return identifiers;
+        }
+        private SyntaxModifier ParseModifier()
+        {
+            switch (Current.TokenType)
+            {
+                case TokenType.PublicKeyword:
+                    Take(TokenType.PublicKeyword);
+                    return SyntaxModifier.Public;
+
+                case TokenType.InternalKeyword:
+                    Take(TokenType.InternalKeyword);
+                    return SyntaxModifier.Internal;
+
+                case TokenType.PrivateKeyword:
+                    Take(TokenType.PrivateKeyword);
+                    return SyntaxModifier.Private;
+
+                default:
+                    return SyntaxModifier.None;
+            }
+        }
 
         // Statements
         private ImportStatement ParseImportStatement()
         {
-            var token = Take("import");
+            var token = Take(TokenType.ImportKeyword);
 
             var moduleNameParts = new List<IdentifierExpression>();
 
@@ -171,82 +221,80 @@ namespace Compiler.Parsing
         {
             SyntaxNode value = null;
 
-            if (Current == TokenType.Keyword)
+            switch (Current.TokenType)
             {
-                switch (Current.Value)
-                {
-                    case "true":
-                    case "false":
-                        value = ParseExpression();
-                        break;
-
-                    case "if":
-                        value = ParseIfStatement();
-                        break;
-
-                    case "do":
-                        value = ParseDoWhileStatement();
-                        break;
-
-                    case "while":
-                        value = ParseWhileStatement();
-                        break;
-
-                    case "for":
-                        value = ParseForStatement();
-                        break;
-
-                    case "switch":
-                        value = ParseSwitchStatement();
-                        break;
-
-                    case "return":
-                        value = ParseReturnStatement();
-                        break;
-
-                    case "var":
-                        value = ParseVariableDeclaration();
-                        break;
-
-                    default:
-                        // TODO(Dan): Fix this error message!
-                        throw UnexpectedToken("if, do, while, for or switch");
-                }
-            }
-            else if (Current == TokenType.Semicolon)
-            {
-                var token = TakeSemicolon();
-
-                AddError("Possibly mistaken empty statement", CreatePart(token.Start), Severity.Warning);
-
-                return new EmptyStatement(CreatePart(token.Start));
-            }
-            else
-            {
-                MakeStatement(() =>
-                {
+                case TokenType.TrueKeyword:
+                case TokenType.FalseKeyword:
                     value = ParseExpression();
-                });
+                    break;
 
-                return value;
+                case TokenType.IfKeyword:
+                    value = ParseIfStatement();
+                    break;
+
+                case TokenType.DoKeyword:
+                    value = ParseDoWhileStatement();
+                    break;
+
+                case TokenType.WhileKeyword:
+                    value = ParseWhileStatement();
+                    break;
+
+                case TokenType.ForKeyword:
+                    value = ParseForStatement();
+                    break;
+
+                case TokenType.SwitchKeyword:
+                    value = ParseSwitchStatement();
+                    break;
+
+                case TokenType.ReturnKeyword:
+                    value = ParseReturnStatement();
+                    break;
+
+                case TokenType.ConstKeyword:
+                case TokenType.LetKeyword:
+                    value = ParseVariableDeclaration();
+                    break;
+
+                default:
+                    {
+                        if (Current == TokenType.Semicolon)
+                        {
+                            var token = TakeSemicolon();
+
+                            AddError("Possibly mistaken empty statement", token, CreatePart(token.Start), Severity.Warning);
+
+                            return new EmptyStatement(CreatePart(token.Start));
+                        }
+                        else
+                        {
+                            MakeStatement(() =>
+                            {
+                                value = ParseExpression();
+                            });
+
+                            return value;
+                        }
+                    }
+                    // TODO(Dan): Fix this error message!
+                    //throw UnexpectedToken("Statement");
             }
 
             if (Last != TokenType.RightBracket)
-            {
                 TakeSemicolon();
-            }
 
             return value;
         }
         private IfStatement ParseIfStatement()
         {
-            var keyword = TakeKeyword("if");
+            var keyword = Take(TokenType.IfKeyword);
             var predicate = ParsePredicate();
             var body = ParseStatementOrScope();
 
             ElseStatement elseStatement = null;
 
-            if (Current == "else")
+            if (Current == TokenType.ElseKeyword)
             {
                 elseStatement = ParseElseStatement();
             }
@@ -255,14 +303,14 @@ namespace Compiler.Parsing
         }
         private ElseStatement ParseElseStatement()
         {
-            var keyword = TakeKeyword("else");
+            var keyword = Take(TokenType.ElseKeyword);
             var body = ParseStatementOrScope();
 
             return new ElseStatement(CreatePart(keyword.Start), body);
         }
         private WhileStatement ParseWhileStatement()
         {
-            var keyword = TakeKeyword("while");
+            var keyword = Take(TokenType.WhileKeyword);
             var predicate = ParsePredicate();
             var body = ParseStatementOrScope();
 
@@ -270,23 +318,23 @@ namespace Compiler.Parsing
         }
         private WhileStatement ParseDoWhileStatement()
         {
-            var keyword = TakeKeyword("do");
+            var keyword = Take(TokenType.DoKeyword);
             var body = ParseStatementOrScope();
-            var @while = TakeKeyword("while");
+            var @while = Take(TokenType.WhileKeyword);
             var predicate = ParsePredicate();
 
             return new WhileStatement(CreatePart(keyword.Start), predicate, body, WhileStatementType.DoWhile);
         }
         private ForStatement ParseForStatement()
         {
-            var keyword = TakeKeyword("for");
+            var keyword = Take(TokenType.ForKeyword);
             SyntaxNode init = null;
             Expression condition = null;
             Expression increment = null;
 
             MakeBlock(() =>
             {
-                if (Current == "var")
+                if (Current == TokenType.LetKeyword)
                 {
                     // var i = 0;
                     init = ParseVariableDeclaration();
@@ -327,7 +375,7 @@ namespace Compiler.Parsing
         }
         private ReturnStatement ParseReturnStatement()
         {
-            var keyword = TakeKeyword("return");
+            var keyword = Take(TokenType.ReturnKeyword);
             var value = ParseExpression();
 
             return new ReturnStatement(CreatePart(keyword.Start), value);
@@ -335,16 +383,14 @@ namespace Compiler.Parsing
         private SwitchStatement ParseSwitchStatement()
         {
             var cases = new List<CaseStatement>();
-            var keyword = TakeKeyword("switch");
+            var keyword = Take(TokenType.SwitchKeyword);
             Expression condition = null;
 
             MakeBlock(() => condition = ParseExpression(), TokenType.LeftParenthesis, TokenType.RightParenthesis);
             MakeBlock(() =>
             {
-                while (Current == "case" || Current == "default")
-                {
+                while (Current == TokenType.CaseKeyword || Current == TokenType.DefaultKeyword)
                     cases.Add(ParseCaseStatement());
-                }
             });
 
             return new SwitchStatement(CreatePart(keyword.Start), condition, cases);
@@ -355,11 +401,11 @@ namespace Compiler.Parsing
             BlockStatement body = null;
             var start = Current;
 
-            while (Current == "case" || Current == "default")
+            while (Current == TokenType.CaseKeyword || Current == TokenType.DefaultKeyword)
             {
-                if (Current == "default")
+                if (Current == TokenType.DefaultKeyword)
                 {
-                    var keyword = TakeKeyword("default");
+                    var keyword = Take(TokenType.DefaultKeyword);
                     Take(TokenType.Semicolon);
 
                     // TODO(Dan): Do this better - it's horrible!
@@ -389,10 +435,11 @@ namespace Compiler.Parsing
         // Declarations
         private ModuleDeclaration ParseModuleDeclaration()
         {
-            var keyword = TakeKeyword("module");
+            var keyword = Take(TokenType.ModuleKeyword);
 
             var moduleNameParts = new List<IdentifierExpression>();
             var classes = new List<ClassDeclaration>();
+            var interfaces = new List<InterfaceDeclaration>();
             var enums = new List<EnumDeclaration>();
             var methods = new List<MethodDeclaration>();
 
@@ -406,44 +453,67 @@ namespace Compiler.Parsing
 
             MakeBlock(() =>
             {
-                while (Current == "class" || Current == "enum" || Current == TokenType.LeftBrace || Current == TokenType.Identifier || Current == TokenType.Keyword)
+                var attributes = ParseAttributes();
+                var modifier = ParseModifier();
+
+                var member = ParseClassInterfaceMethodOrEnumDeclaration(attributes, modifier);
+
+                switch(member)
                 {
-                    if (Current == "class" || Current == TokenType.LeftBrace)
-                    {
-                        classes.Add(ParseClassDeclaration());
-                    }
-                    else if (Current == "enum")
-                    {
-                        enums.Add(ParseEnumDeclaration());
-                    }
-                    else
-                    {
-                        var returnType = ParseTypeDeclaration();
-                        var name = ParseIdentifierName();
-                        methods.Add(ParseMethodDeclaration(name, returnType));
-                    }
+                    case ClassDeclaration @class:
+                        classes.Add(@class);
+                        break;
+                    case InterfaceDeclaration @interface:
+                        interfaces.Add(@interface);
+                        break;
+                    case MethodDeclaration method:
+                        methods.Add(method);
+                        break;
+                    case EnumDeclaration @enum:
+                        enums.Add(@enum);
+                        break;
+
+                    default:
+                        throw SyntaxError($"Unexpected '{member.Kind}', expected class, interface, method or enum", member.FilePart, Severity.Error);
                 }
             });
 
-            return new ModuleDeclaration(CreatePart(keyword.Start), string.Join(".", moduleNameParts.Select(identifier => identifier.Name)), classes, methods, enums);
+            return new ModuleDeclaration(CreatePart(keyword.Start), string.Join(".", moduleNameParts.Select(identifier => identifier.Name)), classes, interfaces, methods, enums);
         }
-        private ClassDeclaration ParseClassDeclaration()
+        private Declaration ParseClassInterfaceMethodOrEnumDeclaration(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
-            var attributes = new List<AttributeSyntax>();
+            switch (Current.TokenType)
+            {
+                case TokenType.ClassKeyword:
+                    return ParseClassDeclaration(attributes, modifier);
+                case TokenType.InterfaceKeyword:
+                    return ParseInterfaceDeclaration(attributes, modifier);
+                case TokenType.EnumKeyword:
+                    return ParseEnumDeclaration(attributes, modifier);
+                default:
+                    // Method declaration
+                    return ParseMethodDeclaration(ParseIdentifierName(), ParseTypeDeclaration(), attributes, modifier);
+            }
+        }
+        private ClassDeclaration ParseClassDeclaration(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
+        {
+            var inhertitors = new List<IdentifierExpression>();
             var constructors = new List<ConstructorDeclaration>();
             var fields = new List<FieldDeclaration>();
             var methods = new List<MethodDeclaration>();
             var properties = new List<PropertyDeclaration>();
 
-            while(Current == TokenType.LeftBrace)
-                attributes.AddRange(ParseAttributes());
-
-            var keyword = TakeKeyword("class");
+            var keyword = Take(TokenType.ClassKeyword);
             var name = ParseIdentifierName();
+
+            if (Current == TokenType.Colon)
+                inhertitors.AddRange(ParseBaseInheritors());
 
             MakeBlock(() =>
             {
-                var member = ParseClassMember();
+                var memberAttributes = ParseAttributes();
+                var memberModifier = ParseModifier();
+                var member = ParseClassMember(memberAttributes, memberModifier);
 
                 switch (member)
                 {
@@ -462,13 +532,60 @@ namespace Compiler.Parsing
                 }
             });
 
-            return new ClassDeclaration(CreatePart(keyword.Start), name, fields, properties, methods, constructors);
+            return new ClassDeclaration(CreatePart(keyword.Start), name, modifier, fields, properties, methods, constructors, attributes);
         }
-        private SyntaxNode ParseClassMember()
+        private SyntaxNode ParseClassMember(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
-            if (Current == "constructor")
-                return ParseConstructorDeclaration();
+            if (Current == TokenType.ConstructorKeyword)
+                return ParseConstructorDeclaration(attributes, modifier);
 
+            var returnType = ParseTypeDeclaration();
+            var name = ParseIdentifierName();
+
+            switch (Current.TokenType)
+            {
+                case TokenType.LeftBracket:
+                case TokenType.FatArrow:
+                    return ParseClassPropertyDeclaration(name, returnType, attributes, modifier);
+
+                case TokenType.LeftParenthesis:
+                //case "<":
+                    return ParseMethodDeclaration(name, returnType, attributes, modifier);
+
+                case TokenType.Semicolon:
+                case TokenType.Assignment:
+                    return ParseFieldDeclaration(name, returnType, attributes, modifier);
+
+                default:
+                    throw UnexpectedToken("Field, Property or Method Declaration: '{', '=>', '(', '<', ';', '='");
+            }
+        }
+        private InterfaceDeclaration ParseInterfaceDeclaration(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
+        {
+            var properties = new List<PropertyDeclaration>();
+
+            var keyword = Take(TokenType.InterfaceKeyword);
+            var name = ParseIdentifierName();
+
+            MakeBlock(() =>
+            {
+                var memberAttributes = ParseAttributes();
+                var member = ParseInterfaceMember(memberAttributes);
+
+                switch (member)
+                {
+                    case PropertyDeclaration property:
+                        properties.Add(property);
+                        break;
+
+                        // TODO(Dan): Methods
+                }
+            });
+
+            return new InterfaceDeclaration(CreatePart(keyword.Start), modifier, name, properties, attributes);
+        }
+        private Declaration ParseInterfaceMember(IEnumerable<AttributeSyntax> attributes)
+        {
             var returnType = ParseTypeDeclaration();
             var name = ParseIdentifierName();
 
@@ -476,36 +593,32 @@ namespace Compiler.Parsing
             {
                 case "{":
                 case "=>":
-                    return ParsePropertyDeclaration(name, returnType);
+                    return ParseInterfacePropertyDeclaration(name, returnType, attributes);
 
                 case "(":
-                case "<":
-                    return ParseMethodDeclaration(name, returnType);
-
-                case ";":
-                case "=":
-                    return ParseFieldDeclaration(name, returnType);
+                //case "<":
+                    return ParseInterfaceMethodDeclaration(name, returnType, attributes);
 
                 default:
-                    throw UnexpectedToken("Field, Property or Method Declaration: '{', '=>', '(', '<', ';', '='");
+                    throw UnexpectedToken("Property or Method Declaration");
             }
         }
-        private ConstructorDeclaration ParseConstructorDeclaration()
+        private ConstructorDeclaration ParseConstructorDeclaration(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
-            var keyword = TakeKeyword("constructor");
+            var keyword = Take(TokenType.ConstructorKeyword);
             var parameters = ParseParameters();
             var body = ParseScope();
 
-            return new ConstructorDeclaration(CreatePart(keyword.Start), keyword.Value, parameters, body);
+            return new ConstructorDeclaration(CreatePart(keyword.Start), modifier, keyword.Value, parameters, body, attributes);
         }
-        private MethodDeclaration ParseMethodDeclaration(string name, TypeDeclaration returnType)
+        private MethodDeclaration ParseMethodDeclaration(string name, TypeDeclaration returnType, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
             var token = Current;
             var parameters = ParseParameters();
 
             if (Current == TokenType.FatArrow)
             {
-                var method = ParseExpressionBodiedMember(name, returnType, parameters);
+                var method = ParseExpressionBodiedMember(name, returnType, parameters, attributes, modifier);
 
                 TakeSemicolon();
 
@@ -514,9 +627,18 @@ namespace Compiler.Parsing
 
             var body = ParseScope();
 
-            return new MethodDeclaration(CreatePart(token.Start), name, returnType, parameters, body);
+            return new MethodDeclaration(CreatePart(token.Start), modifier, name, returnType, parameters, body, attributes);
         }
-        private FieldDeclaration ParseFieldDeclaration(string name, TypeDeclaration returnType)
+        private MethodDeclaration ParseInterfaceMethodDeclaration(string name, TypeDeclaration returnType, IEnumerable<AttributeSyntax> attributes)
+        {
+            var token = Current;
+            var parameters = ParseParameters();
+
+            TakeSemicolon();
+
+            return new MethodDeclaration(CreatePart(token.Start), SyntaxModifier.Public, name, returnType, parameters, null, attributes);
+        }
+        private FieldDeclaration ParseFieldDeclaration(string name, TypeDeclaration returnType, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
             var token = Current;
 
@@ -530,9 +652,9 @@ namespace Compiler.Parsing
 
             TakeSemicolon();
 
-            return new FieldDeclaration(CreatePart(token.Start), name, returnType, defaultValue);
+            return new FieldDeclaration(CreatePart(token.Start), modifier, name, returnType, defaultValue, attributes);
         }
-        private PropertyDeclaration ParsePropertyDeclaration(string name, TypeDeclaration returnType)
+        private PropertyDeclaration ParseClassPropertyDeclaration(string name, TypeDeclaration returnType, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
             var token = Current;
 
@@ -541,7 +663,7 @@ namespace Compiler.Parsing
 
             if (Current == TokenType.FatArrow)
             {
-                getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), attributes, modifier);
                 TakeSemicolon();
             }
             else
@@ -557,21 +679,20 @@ namespace Compiler.Parsing
 
                                 switch (Current.TokenType)
                                 {
-                                    // TODO(Dan): Allow { get; set; }
                                     case TokenType.Semicolon:
                                         {
                                             //var part = CreatePart(get.Start);
                                             //// TODO(Dan): Need to add this compiler generated field to the AST
                                             //var backingField = new FieldDeclaration(part, $"_{name.FirstToLower()}", returnType, null);
                                             //var body = new BlockStatement(part, new[] { new ReturnStatement(CreatePart(get.Start), new IdentifierExpression(part, $"_{name.ToLower()}")) });
-                                            //getMethod = new MethodDeclaration(part, $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body, new[] { new AttributeSyntax("CompilerGenerated", new SourceFilePart()) });
+                                            //getMethod = new MethodDeclaration(part, $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body);
                                             TakeSemicolon();
                                             break;
                                         }
                                         
                                     case TokenType.FatArrow:
-                                        {
-                                            getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                                        { 
+                                            getMethod = ParseExpressionBodiedMember($"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), attributes, modifier);
                                             TakeSemicolon();
                                             break;
                                         }
@@ -581,9 +702,9 @@ namespace Compiler.Parsing
                                             var body = ParseScope();
 
                                             if (getMethod != null)
-                                                AddError($"Multiple getters for property: {name}", CreatePart(get.Start), Severity.Error);
+                                                AddError($"Multiple getters for property: {name}", get, CreatePart(get.Start), Severity.Error);
                                             else
-                                                getMethod = new MethodDeclaration(CreatePart(get.Start), $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body);
+                                                getMethod = new MethodDeclaration(CreatePart(get.Start), modifier, $"get_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), body, attributes);
 
                                         }
                                         break;
@@ -602,7 +723,7 @@ namespace Compiler.Parsing
                                             //var part = CreatePart(set.Start);
                                             //var backingField = new FieldDeclaration(part, $"_{name.FirstToLower()}", returnType, null);
                                             //var body = new BlockStatement(part, new[] { new BinaryExpression(part, new IdentifierExpression(part, backingField.Name), new IdentifierExpression(part, "value"), BinaryOperator.Assign) });
-                                            //var methodDeclaration = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(new SourceFilePart(null, null, null, null), "void"), new[] { new ParameterDeclaration(part, "value", returnType) }, body);
+                                            //var methodDeclaration = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(new SourceFilePart(), "void"), new[] { new ParameterDeclaration(part, "value", returnType) }, body);
                                             TakeSemicolon();
                                             break;
                                         }
@@ -610,7 +731,7 @@ namespace Compiler.Parsing
                                     // TODO(Dan): Allow { get => _value; set => _value = value; }
                                     case TokenType.FatArrow:
                                         {
-                                            setMethod = ParseExpressionBodiedMember($"set_{name}", returnType, Enumerable.Empty<ParameterDeclaration>());
+                                            setMethod = ParseExpressionBodiedMember($"set_{name}", returnType, Enumerable.Empty<ParameterDeclaration>(), attributes, modifier);
                                             TakeSemicolon();
                                             break;
                                         }
@@ -620,9 +741,9 @@ namespace Compiler.Parsing
                                             var body = ParseScope();
 
                                             if (getMethod != null)
-                                                AddError($"Multiple getters for property: {name}", CreatePart(set.Start), Severity.Error);
+                                                AddError($"Multiple getters for property: {name}", Current, CreatePart(set.Start), Severity.Error);
                                             else
-                                                setMethod = new MethodDeclaration(CreatePart(set.Start), $"set_{name}", new TypeDeclaration(new SourceFilePart(null, null, null, null), "void"), new[] { new ParameterDeclaration(CreatePart(set.Start), "value", returnType) }, body);
+                                                setMethod = new MethodDeclaration(CreatePart(set.Start), modifier, $"set_{name}", new TypeDeclaration(new SourceFilePart(null, null, null, null), "void"), new[] { new ParameterDeclaration(CreatePart(set.Start), "value", returnType) }, body, attributes);
 
                                         }
                                         break;
@@ -639,13 +760,50 @@ namespace Compiler.Parsing
             if (Current == TokenType.Semicolon)
             {
                 var semicolon = TakeSemicolon();
-                AddError("Possibly mistaken empty statement", CreatePart(semicolon.Start, semicolon.End), Severity.Warning);
+                AddError("Possibly mistaken empty statement", semicolon, CreatePart(semicolon.Start, semicolon.End), Severity.Warning);
             }
 
             //if (getMethod == null)
             //    AddError($"Property '{name}' does not have a getter", CreatePart(token.Start), Severity.Error);
 
-            return new PropertyDeclaration(CreatePart(token.Start), name, returnType, getMethod, setMethod);
+            return new PropertyDeclaration(CreatePart(token.Start), modifier, name, returnType, getMethod, setMethod, attributes);
+        }
+        private PropertyDeclaration ParseInterfacePropertyDeclaration(string name, TypeDeclaration returnType, IEnumerable<AttributeSyntax> attributes)
+        {
+            var token = Current;
+
+            MethodDeclaration getMethod = null;
+            MethodDeclaration setMethod = null;
+
+            MakeBlock(() =>
+            {
+                switch (Current.Value)
+                {
+                    case "get":
+                        {
+                            var get = Take();
+                            TakeSemicolon();
+                            break;
+                        }
+                    case "set":
+                        {
+                            var set = Take();
+                            TakeSemicolon();
+                            break;
+                        }
+                    default:
+                        throw UnexpectedToken("get or set");
+                }
+            });
+            
+
+            if (Current == TokenType.Semicolon)
+            {
+                var semicolon = TakeSemicolon();
+                AddError("Possibly mistaken empty statement", semicolon, CreatePart(semicolon.Start, semicolon.End), Severity.Warning);
+            }
+
+            return new PropertyDeclaration(CreatePart(token.Start), SyntaxModifier.Public, name, returnType, getMethod, setMethod, attributes);
         }
         private TypeDeclaration ParseTypeDeclaration()
         {
@@ -693,11 +851,14 @@ namespace Compiler.Parsing
         }
         private VariableDeclaration ParseVariableDeclaration()
         {
-            var start = TakeKeyword("var");
-            var isMutable = Peek(1) == "mut";
+            Token start = null;
 
-            if (isMutable)
-                TakeKeyword("mut");
+            if (Current == TokenType.ConstKeyword)
+                start = Take(TokenType.ConstKeyword);
+            else
+                start = Take(TokenType.LetKeyword);
+
+            var isMutable = start == TokenType.LetKeyword;
             
             var name = ParseIdentifierName();
             var type = TypeDeclaration.Empty;// This will be inferred later
@@ -716,7 +877,7 @@ namespace Compiler.Parsing
 
             return new VariableDeclaration(CreatePart(start.Start), name, type, value, mutabilityType);
         }
-        private MethodDeclaration ParseExpressionBodiedMember(string methodName, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters)
+        private MethodDeclaration ParseExpressionBodiedMember(string methodName, TypeDeclaration returnType, IEnumerable<ParameterDeclaration> parameters, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
             Take(TokenType.FatArrow);
 
@@ -728,16 +889,11 @@ namespace Compiler.Parsing
             if (returnType.Name != "void")
                 returnStatement = new ReturnStatement(span, expression);
 
-            return new MethodDeclaration(span, methodName, returnType, parameters, new BlockStatement(span, new[] { (SyntaxNode)returnStatement ?? expression }));
+            return new MethodDeclaration(span, modifier, methodName, returnType, parameters, new BlockStatement(span, new[] { (SyntaxNode)returnStatement ?? expression }), attributes);
         }
-        private EnumDeclaration ParseEnumDeclaration()
+        private EnumDeclaration ParseEnumDeclaration(IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
-            var attributes = new List<AttributeSyntax>();
-
-            while(Current == TokenType.LeftBrace)
-                attributes.AddRange(ParseAttributes());
-
-            var start = TakeKeyword("enum");
+            var start = Take(TokenType.EnumKeyword);
             var name = ParseIdentifierName();
             var members = new List<EnumMemberDeclaration>();
 
@@ -749,14 +905,13 @@ namespace Compiler.Parsing
                     Take(TokenType.Comma);
             });
 
-            return new EnumDeclaration(CreatePart(start.Start), name, members, attributes);
+            return new EnumDeclaration(CreatePart(start.Start), modifier, name, members, attributes);
         }
         private EnumMemberDeclaration ParseEnumMemberDeclaration()
         {
             var attributes = new List<AttributeSyntax>();
 
-            while (Current == TokenType.LeftBrace)
-                attributes.AddRange(ParseAttributes());
+            attributes.AddRange(ParseAttributes());
 
             var name = Take(TokenType.Identifier);
             Expression value = null;
@@ -770,9 +925,6 @@ namespace Compiler.Parsing
             return new EnumMemberDeclaration(CreatePart(name.Start), name.Value, value, attributes);
         }
 
-        // TODO(Dan): Enums
-
-        // Expressions - Urgh make sure I get the precedence right here...
         private bool IsAdditiveOperator()
         {
             switch (Current.TokenType)
@@ -1150,7 +1302,7 @@ namespace Compiler.Parsing
 
                 return ParseIdentifierExpression();
             }
-            else if (Current.Category == TokenCategory.Constant || Current == "true" || Current == "false")
+            else if (Current.Category == TokenCategory.Constant || Current == TokenType.TrueKeyword || Current == TokenType.FalseKeyword)
             {
                 return ParseConstantExpression();
             }
@@ -1158,11 +1310,11 @@ namespace Compiler.Parsing
             {
                 return ParseOverrideExpression();
             }
-            else if (Current == "new")
+            else if (Current == TokenType.NewKeyword)
             {
                 return ParseNewExpression();
             }
-            else if (Current == TokenType.Semicolon && Last == "return")
+            else if (Current == TokenType.Semicolon && Last == TokenType.ReturnKeyword)
             {
                 // TODO(Dan): Is this actually OK?
                 return null;
@@ -1287,7 +1439,7 @@ namespace Compiler.Parsing
         {
             var kind = ConstantType.Invalid;
 
-            if (Current == "true" || Current == "false")
+            if (Current == TokenType.TrueKeyword || Current == TokenType.FalseKeyword)
             {
                 kind = ConstantType.Boolean;
             }
@@ -1305,7 +1457,7 @@ namespace Compiler.Parsing
             }
             else
             {
-                throw UnexpectedToken("Constant");
+                throw UnexpectedToken("Constant expression");
             }
 
             var token = Take();
@@ -1350,7 +1502,7 @@ namespace Compiler.Parsing
         }
         private Expression ParseNewExpression()
         {
-            var start = TakeKeyword("new");
+            var start = Take(TokenType.NewKeyword);
             var references = new List<Expression>();
             var arguments = new List<Expression>();
 
@@ -1402,9 +1554,9 @@ namespace Compiler.Parsing
         }
 
         // Errors
-        private void AddError(string message, SourceFilePart part, Severity severity)
+        private void AddError(string message, Token token, SourceFilePart part, Severity severity)
         {
-            _errorSink.AddError($"{message} in '{_currentSourceFile.Name}'", part, severity);
+            _errorSink.AddError($"{message} in '{_currentSourceFile.Name}'", token, part, severity);
         }
         private SyntaxException UnexpectedToken(TokenType expected)
         {
@@ -1418,14 +1570,14 @@ namespace Compiler.Parsing
                 ? Last?.TokenType.ToString()
                 : Last?.Value;
 
-            var message = $"Unexpected '{value}'. Expected {expected}";
+            var message = $"Unexpected '{value}'. Expected '{expected}'";
 
             return SyntaxError(message, CreatePart(Last.Start, Current.End), Severity.Error);
         }
         private SyntaxException SyntaxError(string message, SourceFilePart part, Severity severity)
         {
             _error = true;
-            AddError(message, part, severity);
+            AddError(message, Current, part, severity);
             return new SyntaxException(message);
         }
 
@@ -1471,13 +1623,6 @@ namespace Compiler.Parsing
 
             return Take();
         }
-        private Token TakeKeyword(string keyword)
-        {
-            if (Current != TokenType.Keyword && Current != keyword)
-                throw UnexpectedToken(keyword);
-
-            return Take();
-        }
         private Token TakeSemicolon()
         {
             return Take(TokenType.Semicolon);
@@ -1498,10 +1643,28 @@ namespace Compiler.Parsing
             if (Current == TokenType.Identifier)
                 return Take(TokenType.Identifier).Value;
 
-            if (Current == TokenType.Keyword && new[] { "int", "string", "void", "float", "double", "decimal", "char" }.Contains(Current.Value))
-                return Take(TokenType.Keyword).Value;
+            switch (Current.TokenType)
+            {
+                case TokenType.InterfaceKeyword:
+                    return Take(TokenType.InterfaceKeyword).Value;
+                case TokenType.StringKeyword:
+                    return Take(TokenType.StringKeyword).Value;
+                case TokenType.VoidKeyword:
+                    return Take(TokenType.VoidKeyword).Value;
+                case TokenType.FloatKeyword:
+                    return Take(TokenType.FloatKeyword).Value;
+                case TokenType.DoubleKeyword:
+                    return Take(TokenType.DoubleKeyword).Value;
+                case TokenType.DecimalKeyword:
+                    return Take(TokenType.DecimalKeyword).Value;
+                case TokenType.CharKeyword:
+                    return Take(TokenType.CharKeyword).Value;
+                case TokenType.IntKeyword:
+                    return Take(TokenType.IntKeyword).Value;
 
-            throw UnexpectedToken("Identifier");
+                default:
+                    throw UnexpectedToken("Identifier");
+            }
         }
         private void MakeBlock(Action action, TokenType open = TokenType.LeftBracket, TokenType close = TokenType.RightBracket)
         {

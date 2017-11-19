@@ -3,7 +3,7 @@
 module Sx.Test
 {
 	[TestAttribute][TestAttributeWithParam(1)][TestAttributesWithoutParam, TestAttributesWithParam(2)][TestAttributesWithParam(1), TestAttributesWithParam(2)]
-	class Program
+	public class Program : Foo,
 	{
 		int _intField = 1;
 		int value = 1;
@@ -15,17 +15,12 @@ module Sx.Test
 		{
 			_intField = value;
 			
-			var x = value[0];
+			const x = value[0];
 			
-			var y = _a || 1;
+			let y = _a || 1;
 			
-			var z = _a << 1;
 			
-			var w = 1 << 4;
-
-			var m = new A();
-			
-			for(var i = 0; i < 10; i++)
+			for(let i = 0; i < 10; i++)
 			{
 				
 			}
@@ -44,6 +39,12 @@ module Sx.Test
 			}
 		}
 		
+	}
+
+	interface Foo
+	{
+		int SomeIntProperty { get; }
+		void Add(int a, int b);
 	}
 
 	enum TestEnum
@@ -68,35 +69,5 @@ module Sx.Test
 		}
 		
 		return "This is a test!";
-	}
-}
-
-module Sx.AnotherTest
-{
-	class A
-	{
-		int _value;
-		
-		int Value => _value;
-		
-		int Add(int a)
-		{
-			return _value + 2;
-		}
-		
-		constructor(int value)
-		{
-			_value = value;
-		}
-	}
-}
-
-module Sx.SomeOtherTestModule
-{	
-	class B
-	{
-		constructor()
-		{
-		}
 	}
 }

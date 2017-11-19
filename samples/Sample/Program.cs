@@ -28,30 +28,47 @@ namespace Sample
             Console.WriteLine();
             Console.WriteLine();
 
-            if (parser.ErrorSink.HasErrors)
+            if (parser.ErrorSink.Any())
             {
                 Console.WriteLine("----------- ERRORS: -----------");
 
                 foreach (var error in parser.ErrorSink.Where(x => x.Severity == Severity.Error))
-                    Console.WriteLine($"Message: {error.Message}. Location: (Start LineNo) {error.FilePart.Start.LineNumber} (Start Col) {error.FilePart.Start.Column}, (End LineNo) {error.FilePart.End.LineNumber}, (End Col) {error.FilePart.End.Column}. Value: {string.Join(" ", error.FilePart.Lines ?? new[] { string.Empty })}");
+                    PrettyPrintError(error);
 
                 Console.WriteLine();
                 Console.WriteLine("---------- WARNINGS: ----------");
                 Console.WriteLine();
 
                 foreach (var error in parser.ErrorSink.Where(x => x.Severity == Severity.Warning))
-                    Console.WriteLine($"Message: {error.Message}. Location: (Start LineNo) {error.FilePart.Start.LineNumber} (Start Col) {error.FilePart.Start.Column}, (End LineNo) {error.FilePart.End.LineNumber}, (End Col) {error.FilePart.End.Column}. Value: {string.Join(" ", error.FilePart.Lines ?? new[] { string.Empty })}");
+                    PrettyPrintError(error);
 
                 Console.WriteLine();
                 Console.WriteLine("------------ INFO: ------------");
                 Console.WriteLine();
 
                 foreach (var error in parser.ErrorSink.Where(x => x.Severity == Severity.Message))
-                    Console.WriteLine($"Message: {error.Message}. Location: (Start LineNo) {error.FilePart.Start.LineNumber} (Start Col) {error.FilePart.Start.Column}, (End LineNo) {error.FilePart.End.LineNumber}, (End Col) {error.FilePart.End.Column}. Value: {string.Join(" ", error.FilePart.Lines ?? new[] { string.Empty })}");
+                    PrettyPrintError(error);
 
                 Console.WriteLine();
             }
 
+            Console.WriteLine();
+        }
+
+        static void PrettyPrintError(Error error)
+        {
+
+            var tokenLength = error.Token.Value.Length;
+            var length = (error.FilePart.Start.Column - 1 - tokenLength) > 0
+                ? (error.FilePart.Start.Column - 1 - tokenLength)
+                : 0;
+            var arrow = string.Join("", Enumerable.Range(0, length).Select(x => "-"));
+            var upArrows = string.Join("", Enumerable.Range(0, tokenLength).Select(x => "^"));
+            Console.WriteLine($"Message: {error.Message}. Location: (Start LineNo) {error.FilePart.Start.LineNumber} (Start Col) {error.FilePart.Start.Column}, (End LineNo) {error.FilePart.End.LineNumber}, (End Col) {error.FilePart.End.Column}.");
+            Console.WriteLine();
+            Console.WriteLine($"{(string.Join(" ", error.FilePart.Lines ?? new[] { string.Empty })).Trim()}");
+            Console.WriteLine($"{arrow}{upArrows}");
+            Console.WriteLine();
             Console.WriteLine();
         }
     }

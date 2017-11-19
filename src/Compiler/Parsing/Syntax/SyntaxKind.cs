@@ -39,6 +39,7 @@
         SourceDocument,
         Attribute,
         EnumDeclaration,
-        EnumMemberDeclaration
+        EnumMemberDeclaration,
+        InterfaceDeclaration
     }
 }
