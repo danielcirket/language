@@ -18,6 +18,7 @@ namespace Compiler.Lexing
         private readonly IEnumerable<string> _keywords;
 
         // TODO(Dan): Possibly add some bounds checks here
+        private char Last => _sourceFile.Contents[_index - 1];
         private char Current => _sourceFile.Contents[_index];
         private char Next => _sourceFile.Contents[_index + 1];
         public ErrorSink ErrorSink => _errorSink;
@@ -254,7 +255,7 @@ namespace Compiler.Lexing
                 Consume();
 
             if (_builder.ToString().IsKeyword(_keywords))
-                return CreateToken(TokenType.Keyword);
+                return CreateToken(_grammar.Keywords.First(keyword => keyword.Value == _builder.ToString()).TokenType);
 
             return CreateToken(TokenType.Identifier);
         }
@@ -554,7 +555,7 @@ namespace Compiler.Lexing
                 new SourceFileLocation(_column, _index, _line),
                 _builder.ToString().Split('\n'));
 
-            _errorSink.AddError(message, sourceFilePart, severity);
+            _errorSink.AddError(message, new Token(TokenType.Error, _builder.ToString(), sourceFilePart.Start, sourceFilePart.End), sourceFilePart, severity);
         }
 
         public Tokenizer(TokenizerGrammar grammar) : this(grammar, new ErrorSink()) { }

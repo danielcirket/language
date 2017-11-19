@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Compiler.Lexing
 {
@@ -43,6 +44,27 @@ namespace Compiler.Lexing
             return left?.Value == right;
         }
 
+        public override bool Equals(object obj)
+        {
+            var token = obj as Token;
+            return token != null &&
+                   Category == token.Category &&
+                   TokenType == token.TokenType &&
+                   EqualityComparer<SourceFileLocation>.Default.Equals(Start, token.Start) &&
+                   EqualityComparer<SourceFileLocation>.Default.Equals(End, token.End) &&
+                   Value == token.Value;
+        }
+        public override int GetHashCode()
+        {
+            var hashCode = 1923680246;
+            hashCode = hashCode * -1521134295 + Category.GetHashCode();
+            hashCode = hashCode * -1521134295 + TokenType.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<SourceFileLocation>.Default.GetHashCode(Start);
+            hashCode = hashCode * -1521134295 + EqualityComparer<SourceFileLocation>.Default.GetHashCode(End);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Value);
+            return hashCode;
+        }
+
         private TokenCategory GetTokenCategory()
         {
             switch (TokenType)
@@ -65,7 +87,6 @@ namespace Compiler.Lexing
                     return TokenCategory.Whitespace;
 
                 case TokenType.Identifier:
-                case TokenType.Keyword:
                     return TokenCategory.Identifier;
                 
                 case TokenType.LeftBracket:
@@ -117,11 +138,46 @@ namespace Compiler.Lexing
                 case TokenType.FatArrow:
                     return TokenCategory.Punctuation;
 
+                case TokenType.BreakKeyword:
+                case TokenType.CaseKeyword:
+                case TokenType.CatchKeyword:
+                case TokenType.CharKeyword:
+                case TokenType.ClassKeyword:
+                case TokenType.ConstKeyword:
+                case TokenType.ConstructorKeyword:
+                case TokenType.DecimalKeyword:
+                case TokenType.DefaultKeyword:
+                case TokenType.DoKeyword:
+                case TokenType.DoubleKeyword:
+                case TokenType.ElseKeyword:
+                case TokenType.EnumKeyword:
+                case TokenType.FalseKeyword:
+                case TokenType.FloatKeyword:
+                case TokenType.ForKeyword:
+                case TokenType.IfKeyword:
+                case TokenType.ImportKeyword:
+                case TokenType.InterfaceKeyword:
+                case TokenType.InternalKeyword:
+                case TokenType.IntKeyword:
+                case TokenType.LetKeyword:
+                case TokenType.ModuleKeyword:
+                case TokenType.NewKeyword:
+                case TokenType.PrivateKeyword:
+                case TokenType.PublicKeyword:
+                case TokenType.ReturnKeyword:
+                case TokenType.StringKeyword:
+                case TokenType.SwitchKeyword:
+                case TokenType.TrueKeyword:
+                case TokenType.TryKeyword:
+                case TokenType.VoidKeyword:
+                case TokenType.WhileKeyword:
+                    return TokenCategory.Identifier;
+
                 default:
                     return TokenCategory.Unknown;
             }
         }
-        
+
         public Token(TokenType type, string value, SourceFileLocation start, SourceFileLocation end)
         {
             if (value == null)

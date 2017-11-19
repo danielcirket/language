@@ -6,13 +6,12 @@ namespace Compiler.Lexing
     {
         private static Dictionary<TokenType, string> _lookup = new Dictionary<TokenType, string>
         {
-             { TokenType.LineComment, "# or //" }, // #, //
+            { TokenType.LineComment, "# or //" }, // #, //
             { TokenType.BlockComment, "/* or */" }, // /* */
             { TokenType.IntegerLiteral, string.Empty },
             { TokenType.StringLiteral, string.Empty },
             { TokenType.RealLiteral, string.Empty },
             { TokenType.Identifier, string.Empty },
-            { TokenType.Keyword, string.Empty },
             { TokenType.LeftBracket, "{" }, // {
             { TokenType.RightBracket, "}" }, // }
             { TokenType.RightBrace, "]" }, // ]

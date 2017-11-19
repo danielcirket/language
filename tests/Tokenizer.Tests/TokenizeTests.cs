@@ -338,7 +338,7 @@ namespace Tokenize.Tests
                     var result = CreateDefaultTokenizer().Tokenize(input).ToList();
 
                     result.Count.Should().Be(2);
-                    result.First().TokenType.Should().Be(TokenType.Keyword);
+                    result.First().TokenType.Should().Be(TokenizerGrammar.Default.Keywords.First().TokenType);
                     result.First().Value.Should().Be(input);
                     result.Last().TokenType.Should().Be(TokenType.EOF);
                 }
