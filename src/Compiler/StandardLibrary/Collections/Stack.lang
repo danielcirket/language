@@ -1,0 +1,69 @@
+﻿import System;
+
+module System.Collections
+{
+	public class Stack<T>
+	{
+		private Array<T> _items;
+		private int _size = 0;
+		private int _defaultCapactity = 4;
+
+		public int Count => _size;
+
+		public Stack<T> Clear() 
+		{
+			return new Stack<T>();
+		}
+		public bool Contains(item : T)
+		{
+			return _size != 0 && _items.LastIndexOf(_items, item, _size - 1) != -1;
+		}
+		public T Peek()
+		{
+			const size = _size - 1;
+		
+			if (size < 1)
+				throw new InvalidOperationException("Cannot pop item from an empty stack.");
+		
+			if (size >= _items.Length)
+				throw new InvalidOperationException("Cannot pop item from an empty stack.");
+		
+			const item = _items[size];
+		
+			return item;
+		}
+		public T Pop()
+		{
+			const size = _size - 1;
+		
+			if (size < 1)
+				throw new InvalidOperationException("Cannot pop item from an empty stack.");
+		
+			if (size >= _items.Length)
+				throw new InvalidOperationException("Cannot pop item from an empty stack.");
+		
+			_size = size;
+		
+			const item = _items[size];
+		
+			return item;
+		}
+		public Stack<T> Push(item : T)
+		{
+			return new Stack<T>(_items.Add(item));
+		}
+
+		public constructor()
+		{
+			_items = new Array<T>();
+		}
+		/*public constructor(capacity : int)
+		{
+			_items = new Array<T>(capactiy);
+		}
+		public constructor(Iterable<T> collection)
+		{
+			
+		}*/
+	}
+}

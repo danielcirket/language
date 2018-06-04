@@ -43,6 +43,7 @@ namespace Compiler.Lexing
         {
             return left?.Value == right;
         }
+        public static implicit operator TokenType(Token token) => token.TokenType;
 
         public override bool Equals(object obj)
         {
@@ -141,7 +142,7 @@ namespace Compiler.Lexing
                 case TokenType.BreakKeyword:
                 case TokenType.CaseKeyword:
                 case TokenType.CatchKeyword:
-                case TokenType.CharKeyword:
+                //case TokenType.CharKeyword:
                 case TokenType.ClassKeyword:
                 case TokenType.ConstKeyword:
                 case TokenType.ConstructorKeyword:
@@ -171,7 +172,7 @@ namespace Compiler.Lexing
                 case TokenType.TryKeyword:
                 case TokenType.VoidKeyword:
                 case TokenType.WhileKeyword:
-                    return TokenCategory.Identifier;
+                    return TokenCategory.Keyword;
 
                 default:
                     return TokenCategory.Unknown;

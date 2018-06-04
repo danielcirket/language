@@ -74,7 +74,6 @@
         DefaultKeyword,
         BreakKeyword,
         ReturnKeyword,
-        VoidKeyword,
         WhileKeyword,
         DoKeyword,
         ForKeyword,
@@ -82,14 +81,25 @@
         LetKeyword,
         TrueKeyword,
         FalseKeyword,
+        TryKeyword,
+        CatchKeyword,
+        ConstructorKeyword,
+
+        BoolKeyword,
+        ByteKeyword,
+        SByteKeyword,
         IntKeyword,
-        StringKeyword,
+        UIntKeyword,
+        ShortKeyword,
+        UShortKeyword,
+        LongKeyword,
+        ULongKeyword,
         FloatKeyword,
         DoubleKeyword,
         DecimalKeyword,
-        CharKeyword,
-        TryKeyword,
-        CatchKeyword,
-        ConstructorKeyword
+        StringKeyword,
+        //CharKeyword,
+        //ObjectKeyword,
+        VoidKeyword
     }
 }

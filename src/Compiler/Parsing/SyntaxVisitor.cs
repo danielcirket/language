@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Compiler.Parsing.Syntax;
 using Compiler.Parsing.Syntax.Declarations;
 using Compiler.Parsing.Syntax.Expressions;
+using Compiler.Parsing.Syntax.Expressions.Types;
 using Compiler.Parsing.Syntax.Statements;
+using Compiler.Semantics.BoundSyntax;
 
 namespace Compiler.Parsing
 {
@@ -14,10 +14,6 @@ namespace Compiler.Parsing
         {
             switch (node)
             {
-                case SourceDocument document:
-                    VisitDocument(document);
-                    break;
-
                 case Expression expression:
                     VisitExpression(expression);
                     break;
@@ -70,6 +66,10 @@ namespace Compiler.Parsing
 
                 case UnaryExpression unaryExpression:
                     VisitUnary(unaryExpression);
+                    break;
+
+                case TypeExpression typeExpression:
+                    VisitType(typeExpression);
                     break;
             }
         }
@@ -202,21 +202,8 @@ namespace Compiler.Parsing
 
                 case VariableDeclaration variableDeclaration:
                     VisitVariable(variableDeclaration);
-                    break;
-
-                case TypeDeclaration typeDeclaration:
-                    VisitType(typeDeclaration);
-                    break;
+                    break;                
             }
-        }
-
-        protected virtual void VisitDocument(SourceDocument sourceDocument)
-        {
-            foreach (var node in sourceDocument.Imports)
-                node.Accept(this);
-
-            foreach (var node in sourceDocument.Modules)
-                node.Accept(this);
         }
 
         protected abstract void VisitArithmetic(BinaryExpression expression);
@@ -228,6 +215,8 @@ namespace Compiler.Parsing
         protected abstract void VisitBreak(BreakStatement statement);
         protected abstract void VisitCase(CaseStatement statement);
         protected abstract void VisitClass(ClassDeclaration classDeclaration);
+        protected abstract void VisitInterface(InterfaceDeclaration interfaceDeclaration);
+        protected abstract void VisitEnum(EnumDeclaration enumDeclaration);
         protected abstract void VisitConstant(ConstantExpression expression);
         protected abstract void VisitConstructor(ConstructorDeclaration constructorDeclaration);
         protected abstract void VisitContinue(ContinueStatement statement);
@@ -240,7 +229,7 @@ namespace Compiler.Parsing
         protected abstract void VisitLambda(LambdaExpression expression);
         protected abstract void VisitLogical(BinaryExpression expression);
         protected abstract void VisitMethod(MethodDeclaration methodDeclaration);
-        protected abstract void VisitType(TypeDeclaration typeDeclaration);
+        protected abstract void VisitType(TypeExpression typeDeclaration);
         protected abstract void VisitMethodCall(MethodCallExpression expression);
         protected abstract void VisitNew(NewExpression expression);
         protected abstract void VisitModuleDeclaration(ModuleDeclaration moduleDeclaration);
@@ -254,15 +243,12 @@ namespace Compiler.Parsing
         protected abstract void VisitReturn(ReturnStatement statement);
     }
 
-    internal abstract class SyntaxVisitor<T> where T : SyntaxNode
+    internal abstract class SyntaxVisitor<TNode, TReturnNode> where TNode : SyntaxNode
     {
-        public T Visit(SyntaxNode node)
+        public TReturnNode Visit(TNode node)
         {
             switch (node)
             {
-                case SourceDocument document:
-                    return VisitDocument(node as SourceDocument);
-
                 case Expression expression:
                     return VisitExpression(expression);
 
@@ -274,10 +260,10 @@ namespace Compiler.Parsing
             }
 
             // We shouldn't ever get here in reality
-            return default(T);
+            return default;
         }
 
-        protected T VisitExpression(Expression expression)
+        protected TReturnNode VisitExpression(Expression expression)
         {
             switch (expression)
             {
@@ -307,11 +293,15 @@ namespace Compiler.Parsing
 
                 case UnaryExpression unaryExpression:
                     return VisitUnary(unaryExpression);
+
+                case TypeExpression typeExpression:
+                    return VisitType(typeExpression);
+
             }
 
-            return default(T);
+            return default;
         }
-        protected T VisitBinary(BinaryExpression expression)
+        protected TReturnNode VisitBinary(BinaryExpression expression)
         {
             switch (expression.Operator)
             {
@@ -351,9 +341,9 @@ namespace Compiler.Parsing
                     return VisitBitwise(expression);
             }
 
-            return default(T);
+            return default;
         }
-        protected T VisitStatement(Statement statement)
+        protected TReturnNode VisitStatement(Statement statement)
         {
             switch (statement)
             {
@@ -394,9 +384,9 @@ namespace Compiler.Parsing
                     return VisitReturn(returnStatement);
             }
 
-            return default(T);
+            return default;
         }
-        protected T VisitDeclaration(Declaration node)
+        protected TReturnNode VisitDeclaration(Declaration node)
         {
             switch (node)
             {
@@ -405,6 +395,9 @@ namespace Compiler.Parsing
 
                 case ClassDeclaration classDeclaration:
                     return VisitClass(classDeclaration);
+
+                case InterfaceDeclaration interfaceDeclaration:
+                    return VisitInterface(interfaceDeclaration);
 
                 case FieldDeclaration fieldDeclaration:
                     return VisitField(fieldDeclaration);
@@ -424,46 +417,79 @@ namespace Compiler.Parsing
                 case VariableDeclaration variableDeclaration:
                     return VisitVariable(variableDeclaration);
 
-                case TypeDeclaration typeDeclaration:
-                    return VisitType(typeDeclaration);
-            }
+                case EnumDeclaration enumDeclaration:
+                    return VisitEnum(enumDeclaration);
 
-            return default(T);
+                case EnumMemberDeclaration enumMemberDeclaration:
+                    return VisitEnumMember(enumMemberDeclaration);
+
+                default:
+                    throw new NotImplementedException($"{node.Kind} has not been implemented");
+            }
+        }
+        protected TReturnNode VisitType(TypeExpression typeExpression)
+        {
+            switch (typeExpression)
+            {
+                case InferredTypeExpression inferredTypeExpression:
+                    return VisitInferredType(inferredTypeExpression);
+
+                case PredefinedTypeExpression predfinedTypeExpression:
+                    return VisitPredefinedType(predfinedTypeExpression);
+
+                case UserDefinedTypeExpression userdefinedTypeExpression:
+                    return VisitUserDefinedType(userdefinedTypeExpression);
+
+                case GenericConstraintTypeExpression genericConstraintTypeExpression:
+                    return VisitGenericConstraintType(genericConstraintTypeExpression);
+
+                default:
+                    throw new NotImplementedException($"{typeExpression.GetType().Name} has not been implemented");
+            }
         }
 
-        protected abstract T VisitDocument(SourceDocument sourceDocument);
-        protected abstract T VisitArithmetic(BinaryExpression expression);
-        protected abstract T VisitArrayAccess(ArrayAccessExpression expression);
-        protected abstract T VisitAssignment(BinaryExpression expression);
-        protected abstract T VisitBitwise(BinaryExpression expression);
-        protected abstract T VisitBlock(BlockStatement statement);
-        protected abstract T VisitImport(ImportStatement statement);
-        protected abstract T VisitBreak(BreakStatement statement);
-        protected abstract T VisitCase(CaseStatement statement);
-        protected abstract T VisitClass(ClassDeclaration classDeclaration);
-        protected abstract T VisitConstant(ConstantExpression expression);
-        protected abstract T VisitConstructor(ConstructorDeclaration constructorDeclaration);
-        protected abstract T VisitContinue(ContinueStatement statement);
-        protected abstract T VisitElse(ElseStatement statement);
-        protected abstract T VisitEmpty(EmptyStatement statement);
-        protected abstract T VisitField(FieldDeclaration fieldDeclaration);
-        protected abstract T VisitFor(ForStatement statement);
-        protected abstract T VisitIdentifier(IdentifierExpression expression);
-        protected abstract T VisitIf(IfStatement statement);
-        protected abstract T VisitLambda(LambdaExpression expression);
-        protected abstract T VisitLogical(BinaryExpression expression);
-        protected abstract T VisitMethod(MethodDeclaration methodDeclaration);
-        protected abstract T VisitType(TypeDeclaration typeDeclaration);
-        protected abstract T VisitMethodCall(MethodCallExpression expression);
-        protected abstract T VisitNew(NewExpression expression);
-        protected abstract T VisitModuleDeclaration(ModuleDeclaration moduleDeclaration);
-        protected abstract T VisitParameter(ParameterDeclaration parameterDeclaration);
-        protected abstract T VisitProperty(PropertyDeclaration propertyDeclaration);
-        protected abstract T VisitReference(ReferenceExpression expression);
-        protected abstract T VisitSwitch(SwitchStatement statement);
-        protected abstract T VisitUnary(UnaryExpression expression);
-        protected abstract T VisitVariable(VariableDeclaration variableDeclaration);
-        protected abstract T VisitWhile(WhileStatement statement);
-        protected abstract T VisitReturn(ReturnStatement statement);
+        protected abstract TReturnNode VisitUserDefinedType(UserDefinedTypeExpression userdefinedTypeExpression);
+        protected abstract TReturnNode VisitGenericConstraintType(GenericConstraintTypeExpression genericConstraintTypeExpression);
+        protected abstract TReturnNode VisitPredefinedType(PredefinedTypeExpression predfinedTypeExpression);
+        protected abstract TReturnNode VisitInferredType(InferredTypeExpression inferredTypeExpression);
+        protected abstract TReturnNode VisitArithmetic(BinaryExpression expression);
+        protected abstract TReturnNode VisitArrayAccess(ArrayAccessExpression expression);
+        protected abstract TReturnNode VisitAssignment(BinaryExpression expression);
+        protected abstract TReturnNode VisitBitwise(BinaryExpression expression);
+        protected abstract TReturnNode VisitBlock(BlockStatement statement);
+        protected abstract TReturnNode VisitImport(ImportStatement statement);
+        protected abstract TReturnNode VisitBreak(BreakStatement statement);
+        protected abstract TReturnNode VisitCase(CaseStatement statement);
+        protected abstract TReturnNode VisitClass(ClassDeclaration classDeclaration);
+        protected abstract TReturnNode VisitInterface(InterfaceDeclaration interfaceDeclaration);
+        protected abstract TReturnNode VisitEnum(EnumDeclaration enumDeclaration);
+        protected abstract TReturnNode VisitEnumMember(EnumMemberDeclaration enumMemberDeclaration);
+        protected abstract TReturnNode VisitConstant(ConstantExpression expression);
+        protected abstract TReturnNode VisitConstructor(ConstructorDeclaration constructorDeclaration);
+        protected abstract TReturnNode VisitContinue(ContinueStatement statement);
+        protected abstract TReturnNode VisitElse(ElseStatement statement);
+        protected abstract TReturnNode VisitEmpty(EmptyStatement statement);
+        protected abstract TReturnNode VisitField(FieldDeclaration fieldDeclaration);
+        protected abstract TReturnNode VisitFor(ForStatement statement);
+        protected abstract TReturnNode VisitIdentifier(IdentifierExpression expression);
+        protected abstract TReturnNode VisitIf(IfStatement statement);
+        protected abstract TReturnNode VisitLambda(LambdaExpression expression);
+        protected abstract TReturnNode VisitLogical(BinaryExpression expression);
+        protected abstract TReturnNode VisitMethod(MethodDeclaration methodDeclaration);
+        protected abstract TReturnNode VisitMethodCall(MethodCallExpression expression);
+        protected abstract TReturnNode VisitNew(NewExpression expression);
+        protected abstract TReturnNode VisitModuleDeclaration(ModuleDeclaration moduleDeclaration);
+        protected abstract TReturnNode VisitParameter(ParameterDeclaration parameterDeclaration);
+        protected abstract TReturnNode VisitProperty(PropertyDeclaration propertyDeclaration);
+        protected abstract TReturnNode VisitReference(ReferenceExpression expression);
+        protected abstract TReturnNode VisitSwitch(SwitchStatement statement);
+        protected abstract TReturnNode VisitUnary(UnaryExpression expression);
+        protected abstract TReturnNode VisitVariable(VariableDeclaration variableDeclaration);
+        protected abstract TReturnNode VisitWhile(WhileStatement statement);
+        protected abstract TReturnNode VisitReturn(ReturnStatement statement);
     }
+
+    //internal abstract class SyntaxVisitor<T> : SyntaxVisitor<SyntaxNode, T>
+    //{
+    //}
 }

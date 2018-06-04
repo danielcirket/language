@@ -494,6 +494,7 @@ namespace Compiler.Lexing
 
                 case '&':
                     Consume();
+
                     if (!IsEOF() && Current == '=')
                     {
                         Consume();
@@ -502,8 +503,9 @@ namespace Compiler.Lexing
                     else if (!IsEOF() && Current == '&')
                     {
                         Consume();
-                        CreateToken(TokenType.BooleanAnd);
+                        return CreateToken(TokenType.BooleanAnd);
                     }
+
                     return CreateToken(TokenType.BitwiseAnd);
 
                 case '|':
@@ -555,7 +557,7 @@ namespace Compiler.Lexing
                 new SourceFileLocation(_column, _index, _line),
                 _builder.ToString().Split('\n'));
 
-            _errorSink.AddError(message, new Token(TokenType.Error, _builder.ToString(), sourceFilePart.Start, sourceFilePart.End), sourceFilePart, severity);
+            _errorSink.AddError(message, sourceFilePart, severity);
         }
 
         public Tokenizer(TokenizerGrammar grammar) : this(grammar, new ErrorSink()) { }

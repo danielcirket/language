@@ -1,0 +1,7 @@
+﻿module System.Collections
+{
+	public class Queue<T>
+	{
+		
+	}
+}

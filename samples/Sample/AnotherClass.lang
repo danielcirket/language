@@ -1,0 +1,7 @@
+﻿module Sx.AnotherTest
+{
+	public class AnotherClass<T>
+	{
+		
+	}
+}

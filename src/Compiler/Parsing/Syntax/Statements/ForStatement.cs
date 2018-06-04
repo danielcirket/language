@@ -8,8 +8,9 @@ namespace Compiler.Parsing.Syntax.Statements
         public SyntaxNode Initialiser { get; }
         public Expression Condition { get; }
         public Expression Increment { get; }
+        public BlockStatement Body { get; }
 
-        public ForStatement(SourceFilePart filePart, SyntaxNode initialiser, Expression condition, Expression increment) 
+        public ForStatement(SourceFilePart filePart, SyntaxNode initialiser, Expression condition, Expression increment, BlockStatement body) 
             : base(filePart)
         {
             // NOTE(Dan): These can all be empty, e.g. for (;;) {}
@@ -18,6 +19,7 @@ namespace Compiler.Parsing.Syntax.Statements
             Initialiser = initialiser;
             Condition = condition;
             Increment = increment;
+            Body = body;
         }
     }
 }

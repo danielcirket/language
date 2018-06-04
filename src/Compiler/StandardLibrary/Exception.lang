@@ -1,0 +1,8 @@
+﻿module System
+{
+	public interface Exception
+	{
+		string Message { get; }
+		StackTrace StackTrace { get; }
+	}
+}

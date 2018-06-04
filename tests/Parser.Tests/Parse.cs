@@ -2,7 +2,6 @@
 using System.Linq;
 using Compiler;
 using Compiler.Parsing;
-using Compiler.Parsing.Syntax;
 using FluentAssertions;
 using Xunit;
 
@@ -11,7 +10,7 @@ namespace Parser.Tests
     public class Parse
     {
         private static SyntaxParser CreateDefaultParser() => new SyntaxParser();
-        private static SourceFile CreateSourceFile(string name, string contents) => new SourceFile(name + ".language", contents);
+        private static SourceFile CreateSourceFile(string name, string contents) => new SourceFile(name + ".lang", contents);
 
         [Fact]
         public void WhenSourceFileIsNullThenShouldThrowArgumentNullException()
@@ -42,36 +41,42 @@ namespace Parser.Tests
                 act.ShouldNotThrow<SyntaxException>();
             }
             [Fact]
-            public void WhenNoImportStatementsThenSourceDocumentShouldContainNoImports()
+            public void WhenNoImportStatementsThenCompilationUnitShouldContainNoImports()
             {
                 var parser = CreateDefaultParser();
                 var file = CreateSourceFile(nameof(WhenNoImportStatementsThenShouldNotThrowSyntaxException), "");
 
                 var result = parser.Parse(file);
 
-                ((SourceDocument)(result.Children.First())).Imports.Any().Should().Be(false);
+                result.CompilationUnits.Should().HaveCount(1);
+
+                result.CompilationUnits.First().Imports.Any().Should().Be(false);
             }
             [Fact]
-            public void WhenImportStatementProvidedThenSourceDocumentShouldContainImport()
+            public void WhenImportStatementProvidedThenCompilationUnitShouldContainImport()
             {
                 var parser = CreateDefaultParser();
                 var file = CreateSourceFile(nameof(WhenNoImportStatementsThenShouldNotThrowSyntaxException), "import SomeOtherModule;");
 
                 var result = parser.Parse(file);
 
-                ((SourceDocument)(result.Children.First())).Imports.Count().Should().Be(1);
-                ((SourceDocument)(result.Children.First())).Imports.First().Name.Should().Be("SomeOtherModule");
+                result.CompilationUnits.Should().HaveCount(1);
+
+                result.CompilationUnits.First().Imports.Count().Should().Be(1);
+                result.CompilationUnits.First().Imports.First().Name.Should().Be("SomeOtherModule");
             }
             [Fact]
-            public void WhenSuppliedWithMultipleImportsThenSourceDocumentShouldContainMatchingNumberOfImports()
+            public void WhenSuppliedWithMultipleImportsThenCompilationUnitShouldContainMatchingNumberOfImports()
             {
                 var parser = CreateDefaultParser();
                 var file = CreateSourceFile(nameof(WhenNoImportStatementsThenShouldNotThrowSyntaxException), "import SomeOtherModule; import AnotherModule;");
 
                 var result = parser.Parse(file);
 
-                ((SourceDocument)(result.Children.First())).Imports.Count().Should().Be(2);
-                ((SourceDocument)(result.Children.First())).Imports.Last().Name.Should().Be("AnotherModule");
+                result.CompilationUnits.Should().HaveCount(1);
+
+                result.CompilationUnits.First().Imports.Count().Should().Be(2);
+                result.CompilationUnits.First().Imports.Last().Name.Should().Be("AnotherModule");
             }
             [Fact]
             public void WhenSuppliedWithImportStatementContainingDotsThenShouldParseSuccessfully()
@@ -81,8 +86,10 @@ namespace Parser.Tests
 
                 var result = parser.Parse(file);
 
-                ((SourceDocument)(result.Children.First())).Imports.Count().Should().Be(1);
-                ((SourceDocument)(result.Children.First())).Imports.First().Name.Should().Be("SomeOtherModule.SubModule");
+                result.CompilationUnits.Should().HaveCount(1);
+
+                result.CompilationUnits.First().Imports.Count().Should().Be(1);
+                result.CompilationUnits.First().Imports.First().Name.Should().Be("SomeOtherModule.SubModule");
             }
             [Fact]
             public void WhenImportStatementNotAtStartOfFileThenShouldContainTopLevelStatementError()
@@ -93,7 +100,7 @@ namespace Parser.Tests
                 var result = parser.Parse(file);
 
                 parser.ErrorSink.HasErrors.Should().Be(true);
-                parser.ErrorSink.Errors.First().Message.Should().Be("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file in 'WhenImportStatementNotAtStartOfFileThenShouldContainTopLevelStatementError.language'");
+                parser.ErrorSink.Errors.First().Message.Should().Be("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file in 'WhenImportStatementNotAtStartOfFileThenShouldContainTopLevelStatementError.lang'");
                 parser.ErrorSink.Errors.First().Severity.Should().Be(Severity.Error);
             }
         }

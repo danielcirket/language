@@ -7,7 +7,7 @@ namespace Compiler.Parsing.Syntax.Statements
 {
     internal class ImportStatement : Statement
     {
-        public override SyntaxKind Kind => throw new NotImplementedException();
+        public override SyntaxKind Kind => SyntaxKind.ImportStatement;
         public IEnumerable<IdentifierExpression> Names { get; }
         public string Name => string.Join(".", Names.Select(n => n.Name));
 

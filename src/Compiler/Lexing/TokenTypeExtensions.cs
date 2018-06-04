@@ -11,7 +11,7 @@ namespace Compiler.Lexing
             { TokenType.IntegerLiteral, string.Empty },
             { TokenType.StringLiteral, string.Empty },
             { TokenType.RealLiteral, string.Empty },
-            { TokenType.Identifier, string.Empty },
+            { TokenType.Identifier, "Identifier" },
             { TokenType.LeftBracket, "{" }, // {
             { TokenType.RightBracket, "}" }, // }
             { TokenType.RightBrace, "]" }, // ]

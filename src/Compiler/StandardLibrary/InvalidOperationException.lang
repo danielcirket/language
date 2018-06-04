@@ -1,0 +1,11 @@
+﻿module System
+{
+	public class InvalidOperationException : Exception
+	{
+		public string Message { get; }
+
+		public constructor(message : string)
+		{
+		}
+	}
+}

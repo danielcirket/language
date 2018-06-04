@@ -8,12 +8,14 @@ namespace Compiler.Parsing.Syntax.Declarations
         public override SyntaxKind Kind => SyntaxKind.InterfaceDeclaration;
         public SyntaxModifier Modifier { get; }
         public IEnumerable<PropertyDeclaration> Properties { get; }
+        public IEnumerable<MethodDeclaration> Methods { get; }
 
         public InterfaceDeclaration(
             SourceFilePart filePart, 
             SyntaxModifier modifier,
             string name, 
             IEnumerable<PropertyDeclaration> properties,
+            IEnumerable<MethodDeclaration> methods,
             IEnumerable<AttributeSyntax> attributes) 
             : base(filePart, name, attributes)
         {
@@ -22,6 +24,7 @@ namespace Compiler.Parsing.Syntax.Declarations
 
             Modifier = modifier;
             Properties = properties;
+            Methods = methods;
         }
     }
 }

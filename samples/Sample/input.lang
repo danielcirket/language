@@ -1,73 +1,29 @@
-﻿import Sx.AnotherTest;
-
+﻿import System;
+import System.Collections;
+import Sx.AnotherTest;
+//import Newtonsoft.Json;
 module Sx.Test
 {
-	[TestAttribute][TestAttributeWithParam(1)][TestAttributesWithoutParam, TestAttributesWithParam(2)][TestAttributesWithParam(1), TestAttributesWithParam(2)]
-	public class Program : Foo,
+	[Entry]
+	public void Main(args : Array<string>)
 	{
-		int _intField = 1;
-		int value = 1;
-		A _a;
-
-		int IntProp { get; set; }
-		
-		constructor(int value)
-		{
-			_intField = value;
-			
-			const x = value[0];
-			
-			let y = _a || 1;
-			
-			
-			for(let i = 0; i < 10; i++)
-			{
-				
-			}
-		
-			while(true)
-			{
-				
-			}
-			
-			do
-			{
-			} while(true);
-			
-			for(;;)
-			{
-			}
-		}
-		
+		let a = 1;
+		let b = 2;
+		let c = 3;
+		let y = 100;
 	}
 
-	interface Foo
+	public class Test<T>
 	{
-		int SomeIntProperty { get; }
-		void Add(int a, int b);
+		public T TProp { get; set; }
+
+		public constructor(value : int)
+		{
+			TProp = GenericFunction<int>(10);
+		}
 	}
 
-	enum TestEnum
-	{
-		[Description("1")]
-		One,
-		Two = 2,
-		Three = TestModuleLevelMethod(),
-		Four = 1 << 4
-	}
-	
-	string TestModuleLevelMethod()
-	{
-		if (true)
-		{
-		}
-		else if (true)
-		{
-		}
-		else
-		{
-		}
-		
-		return "This is a test!";
+	public T GenericFunction<T>(value : T) {
+		return value;
 	}
 }

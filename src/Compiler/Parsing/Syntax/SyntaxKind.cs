@@ -13,6 +13,24 @@
         LambdaExpression,
         NewExpression,
         ArrayAccessExpression,
+        UserDefinedTypeExpression,
+
+        BoolKeyword,
+        ByteKeyword,
+        SByteKeyword,
+        IntKeyword,
+        UIntKeyword,
+        ShortKeyword,
+        UShortKeyword,
+        LongKeyword,
+        ULongKeyword,
+        FloatKeyword,
+        DoubleKeyword,
+        DecimalKeyword,
+        StringKeyword,
+        //CharKeyword,
+        //ObjectKeyword,
+        VoidKeyword,
 
         ParameterDeclaration,
         VariableDeclaration,
@@ -40,6 +58,8 @@
         Attribute,
         EnumDeclaration,
         EnumMemberDeclaration,
-        InterfaceDeclaration
+        InterfaceDeclaration,
+        InferredType,
+        GenericTypeExpression,
     }
 }

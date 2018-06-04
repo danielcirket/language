@@ -1,0 +1,8 @@
+﻿module System
+{
+	public interface Attribute
+	{
+		bool IsError { get; }
+		bool IsWarning { get; }
+	}
+}

@@ -10,6 +10,7 @@
         Punctuation,
         Operator,
         Identifier,
+        Keyword,
         Invalid
     }
 }

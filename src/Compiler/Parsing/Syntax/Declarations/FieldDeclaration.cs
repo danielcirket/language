@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Compiler.Parsing.Syntax.Expressions;
+using Compiler.Parsing.Syntax.Expressions.Types;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -9,13 +10,13 @@ namespace Compiler.Parsing.Syntax.Declarations
         public override SyntaxKind Kind => SyntaxKind.FieldDeclaration;
         public SyntaxModifier Modifier { get; }
         public Expression DefaultValue { get; }
-        public TypeDeclaration Type { get; }
+        public TypeExpression Type { get; }
 
         public FieldDeclaration(
             SourceFilePart filePart,
             SyntaxModifier modifier,
-            string name, 
-            TypeDeclaration type, 
+            string name,
+            TypeExpression type, 
             Expression value,
             IEnumerable<AttributeSyntax> attributes)
            : base(filePart, name, attributes)

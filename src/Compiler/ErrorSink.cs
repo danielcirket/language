@@ -10,13 +10,15 @@ namespace Compiler
         private List<Error> _errors;
 
         public IEnumerable<Error> Errors => _errors.AsReadOnly();
+        public bool IsWritable { get; set; }
         public bool HasErrors => _errors.Any(error => error.Severity == Severity.Error);
         public bool HasWarnings => _errors.Any(error => error.Severity == Severity.Warning);
         public bool HasMessage => _errors.Any(error => error.Severity == Severity.Message);
 
-        public void AddError(string message, Token token, SourceFilePart filePart, Severity severity)
+        public void AddError(string message, SourceFilePart filePart, Severity severity)
         {
-            _errors.Add(new Error(message, token, filePart.Lines, severity, filePart));
+            if (IsWritable)
+                _errors.Add(new Error(message, filePart.Lines, severity, filePart));
         }
         public void Clear()
         {
@@ -35,6 +37,7 @@ namespace Compiler
         public ErrorSink()
         {
             _errors = new List<Error>();
+            IsWritable = true;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Compiler.Parsing.Syntax
         public SourceFilePart FilePart { get; }
 
         public void Accept(SyntaxVisitor visitor) => visitor.Visit(this);
-        public T Accept<T>(SyntaxVisitor<T> visitor) where T : SyntaxNode => visitor.Visit(this);
+        public TReturnNode Accept<TNode, TReturnNode>(SyntaxVisitor<TNode, TReturnNode> visitor) where TNode : SyntaxNode => visitor.Visit((TNode)this);
 
         protected SyntaxNode(SourceFilePart filePart)
         {

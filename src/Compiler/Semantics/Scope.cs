@@ -1,4 +1,8 @@
-﻿using Compiler.Parsing.Syntax.Declarations;
+﻿using System;
+using System.Collections.Generic;
+using Compiler.Parsing.Syntax;
+using Compiler.Semantics.BoundSyntax.Declarations;
+using Compiler.Semantics.Symbols;
 
 namespace Compiler.Semantics
 {
@@ -7,33 +11,37 @@ namespace Compiler.Semantics
         private readonly Scope _parent;
         private readonly SymbolTable _symbols;
 
-        public void AddModule(string name, ModuleDeclaration declaration) => _symbols.AddModule(name, declaration);
-        public bool ContainsModule(string name) => _symbols.ContainsModule(name);
-        public bool TryGetValue(string name, out ModuleDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
+        public Scope Parent => _parent;
+        public SymbolTable Symbols => _symbols;
 
-        public void AddClass(string name, ClassDeclaration declaration) => _symbols.AddClass(name, declaration);
-        public bool ContainsClass(string name) => _symbols.ContainsClass(name);
-        public bool TryGetValue(string name, out ClassDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
+        //public bool Contains(string name)
+        //{
+        //
+        //}
+        //public IEnumerable<Symbol<T>> Find<T>(string name) where T : BoundDeclaration
+        //{
+        //
+        //}
+        public void AddOrUpdate(Symbol symbol) => _symbols.AddOrUpdate(symbol);
+        public bool TryGetValue(string name, out Symbol symbol) => _symbols.TryGetValue(name, out symbol);
 
-        public void AddMethod(string name, MethodDeclaration declaration) => _symbols.AddMethod(name, declaration);
-        public bool ContainsMethod(string name) => _symbols.ContainsMethod(name);
-        public bool TryGetValue(string name, out MethodDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
+        public void CopyTo(ErrorSink errorSink, Scope scope)
+        {
+            foreach(var item in _symbols)
+            {
+                if (scope.TryGetValue(item.Name, out Symbol symbol))
+                {
+                    if (item.Declaration != null)
+                    {
+                        var filePart = item.Declaration?.SyntaxNode<SyntaxNode>().FilePart;
+                        var existingDeclarationFilePart = symbol.Declaration?.SyntaxNode<SyntaxNode>().FilePart;
+                        errorSink.AddError($"'{item.Name}' already declared and imported via an 'import' statement. Original declaration in '{existingDeclarationFilePart.FilePath}' ({existingDeclarationFilePart.Start.LineNumber}, {existingDeclarationFilePart.Start.Column}) and will shadow the parent declaration in '{filePart.FilePath}'", filePart, Severity.Warning);
+                    }
+                }
 
-        public void AddField(string name, FieldDeclaration declaration) => _symbols.AddField(name, declaration);
-        public bool ContainsField(string name) => _symbols.ContainsField(name);
-        public bool TryGetValue(string name, out FieldDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
-
-        public void AddProperty(string name, PropertyDeclaration declaration) => _symbols.AddProperty(name, declaration);
-        public bool ContainsProperty(string name) => _symbols.ContainsProperty(name);
-        public bool TryGetValue(string name, out PropertyDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
-
-        public void AddConstructor(string name, ConstructorDeclaration declaration) => _symbols.AddConstructor(name, declaration);
-        public bool ContainsConstructor(string name) => _symbols.ContainsConstructor(name);
-        public bool TryGetValue(string name, out ConstructorDeclaration declaration) => _symbols.TryGetValue(name, out declaration);
-
-        public void AddVariable(string name, Declaration declaration) => _symbols.AddVariable(name, declaration);
-        public bool ContainsVariable(string name) => _symbols.ContainsVariable(name);
-        public bool TryGetValue(string name, out Declaration declaration) => _symbols.TryGetValue(name, out declaration);
+                scope.AddOrUpdate(item);
+            }
+        }
 
         public Scope()
         {

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Compiler.Parsing.Syntax.Expressions;
+using Compiler.Parsing.Syntax.Expressions.Types;
 
 namespace Compiler.Parsing.Syntax.Declarations
 {
@@ -11,6 +13,8 @@ namespace Compiler.Parsing.Syntax.Declarations
         public IEnumerable<PropertyDeclaration> Properties { get; }
         public IEnumerable<MethodDeclaration> Methods { get; }
         public IEnumerable<ConstructorDeclaration> Constructors { get; }
+        public IEnumerable<IdentifierExpression> Inheritors { get; }
+        public IEnumerable<TypeExpression> GenericParameters { get; }
 
         public ClassDeclaration(SourceFilePart filePart,
            string name,
@@ -19,27 +23,32 @@ namespace Compiler.Parsing.Syntax.Declarations
            IEnumerable<PropertyDeclaration> properties,
            IEnumerable<MethodDeclaration> methods,
            IEnumerable<ConstructorDeclaration> constructors,
+           IEnumerable<TypeExpression> genericParameters,
+           IEnumerable<IdentifierExpression> inheritors,
            IEnumerable<AttributeSyntax> attributes
            )
            : base(filePart, name, attributes)
         {
             if (fields == null)
                 throw new ArgumentNullException(nameof(fields));
-
             if (properties == null)
                 throw new ArgumentNullException(nameof(properties));
-
             if (methods == null)
                 throw new ArgumentNullException(nameof(methods));
-
             if (constructors == null)
                 throw new ArgumentNullException(nameof(constructors));
+            if (genericParameters == null)
+                throw new ArgumentNullException(nameof(genericParameters));
+            if (inheritors == null)
+                throw new ArgumentNullException(nameof(inheritors));
 
             Modifier = modifier;
             Fields = fields;
             Properties = properties;
             Methods = methods;
             Constructors = constructors;
+            GenericParameters = genericParameters;
+            Inheritors = inheritors;
         }
     }
 }

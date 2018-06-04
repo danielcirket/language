@@ -1,4 +1,6 @@
-﻿namespace Compiler.Parsing.Syntax.Expressions
+﻿using System;
+
+namespace Compiler.Parsing.Syntax.Expressions
 {
     internal class BinaryExpression : Expression
     {
@@ -11,6 +13,11 @@
         public BinaryExpression(SourceFilePart filePart, Expression left, Expression right, BinaryOperator @operator) 
             : base(filePart)
         {
+            if (left == null)
+                throw new ArgumentNullException(nameof(left));
+            if (right == null)
+                throw new ArgumentNullException(nameof(right));
+
             Left = left;
             Right = right;
             Operator = @operator;

@@ -6,9 +6,9 @@ namespace Compiler.Parsing.Syntax.Expressions
     internal class ReferenceExpression : Expression
     {
         public override SyntaxKind Kind => SyntaxKind.ReferenceExpression;
-        public IEnumerable<Expression> References { get; }
+        public IEnumerable<SyntaxNode> References { get; }
 
-        public ReferenceExpression(SourceFilePart filePart, IEnumerable<Expression> references) 
+        public ReferenceExpression(SourceFilePart filePart, IEnumerable<SyntaxNode> references) 
             : base(filePart)
         {
             if (references == null)

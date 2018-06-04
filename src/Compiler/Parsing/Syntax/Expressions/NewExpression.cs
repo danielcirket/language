@@ -6,10 +6,10 @@ namespace Compiler.Parsing.Syntax.Expressions
     internal class NewExpression : Expression
     {
         public override SyntaxKind Kind => SyntaxKind.NewExpression;
-        public Expression Reference { get; }
+        public SyntaxNode Reference { get; }
         public IEnumerable<Expression> Arguments { get; }
 
-        public NewExpression(SourceFilePart filePart, Expression reference, IEnumerable<Expression> arguments) 
+        public NewExpression(SourceFilePart filePart, SyntaxNode reference, IEnumerable<Expression> arguments) 
             : base(filePart)
         {
             if (reference == null)

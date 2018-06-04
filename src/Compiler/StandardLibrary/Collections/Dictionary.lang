@@ -1,0 +1,17 @@
+﻿module System.Collections
+{
+	public class Dictionary<TKey, TValue>
+	{
+		private TKey _key;
+        private TValue _value;
+
+        public TKey Key => _key;
+        public TValue Value => _value;
+
+        public constructor(key : TKey, value : TValue)
+        {
+            _key = key;
+            _value = value;
+        }
+	}
+}

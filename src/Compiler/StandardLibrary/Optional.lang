@@ -1,0 +1,9 @@
+﻿module System
+{
+	public class Optional<T>
+	{
+		private bool _hasValue;
+
+		public bool HasValue => _hasValue;
+	}
+}

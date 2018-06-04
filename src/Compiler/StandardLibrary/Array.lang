@@ -1,0 +1,25 @@
+﻿module System
+{
+	public class Array<T>
+	{
+		public int Length { get; }
+
+		public Array<T> Add(item : T)
+		{
+		}
+		public Array<T> Clear()
+		{
+
+		}
+		public int? IndexOf<T>(value : T)
+		{
+		}
+		public int? LastIndexOf<T>(value : T)
+		{
+		}
+
+		public constructor()
+		{
+		}
+	}
+}
