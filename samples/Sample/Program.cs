@@ -3,18 +3,19 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 using Compiler;
 using Compiler.Parsing;
 using Compiler.Semantics;
-using Newtonsoft.Json;
 
 namespace Sample
 {
     class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.OutputEncoding = Encoding.UTF8;
 
             var startMemory = GC.GetTotalMemory(true);
             var afterParser = 0L;
@@ -25,25 +26,28 @@ namespace Sample
                 .Concat(Directory.GetFiles(Path.Combine(entryAssemblyLocation, "StandardLibrary"), "*.lang", SearchOption.AllDirectories))
                 .Select(f => new SourceFile(f, File.ReadAllText(f)));
 
-            var parser = new SyntaxParser();
+            var parser = new LanguageParser();
             var sematicAnalyzer = new SematicAnalyzer(parser.ErrorSink);
 
             var stopwatch = new Stopwatch();
             var totalTimeStopwatch = new Stopwatch();
 
+            var buffer = new StringBuilder();
+
             try
             {
                 stopwatch.Start();
 
-                var compilationRoot = parser.Parse(files);
+                var compilationRoot = await parser.ParseAsync(files);
 
                 stopwatch.Stop();
 
-                Console.WriteLine($"Parser took {stopwatch.ElapsedMilliseconds}ms to generate AST from {files.Sum(f => f.Lines.Count())} lines");
+                buffer.AppendLine();
+                buffer.AppendLine($"Parser took {stopwatch.ElapsedMilliseconds / 1000.0}s to generate AST from {files.Sum(f => f.Lines.Count())} lines");
 
                 afterParser = GC.GetTotalMemory(false);
 
-                Console.WriteLine($"Memory used: {(afterParser - startMemory) / 1000}Kb");
+                buffer.AppendLine($"Memory used: {(afterParser - startMemory) / 1000}Kb");
 
                 stopwatch.Start();
 
@@ -62,39 +66,42 @@ namespace Sample
 
                     stopwatch.Stop();
 
-                    Console.WriteLine($"Semantic passes took {stopwatch.ElapsedMilliseconds - start}ms");
+                    buffer.AppendLine();
+                    buffer.AppendLine($"Semantic passes took {(stopwatch.ElapsedMilliseconds - start) / 1000.0}s");
 
                 }
 
                 var afterSemantics = GC.GetTotalMemory(false);
 
-                Console.WriteLine($"Memory used: {(afterSemantics - afterParser) / 1000}Kb");
-
-                Console.WriteLine();
+                buffer.AppendLine();
+                buffer.AppendLine($"Memory used: {(afterSemantics - afterParser) / 1000}Kb");
+                buffer.AppendLine();
             }
             catch (Exception ex)
             {
-                Console.WriteLine();
-                Console.WriteLine("----------- INTERNAL COMPILER ERROR -----------");
-                Console.WriteLine();
-                Console.WriteLine(ex.Message);
-                Console.WriteLine();
-                Console.WriteLine(ex.StackTrace);
-                Console.WriteLine();
-                Console.WriteLine("-----------------------------------------------");
+                buffer.AppendLine();
+                buffer.AppendLine("----------- INTERNAL COMPILER ERROR -----------");
+                buffer.AppendLine();
+                buffer.AppendLine(ex.Message);
+                buffer.AppendLine();
+                buffer.AppendLine(ex.StackTrace);
+                buffer.AppendLine();
+                buffer.AppendLine("-----------------------------------------------");
             }
             finally
             {
                 var endMemory = GC.GetTotalMemory(false);
 
-                Console.WriteLine($"Finished in {stopwatch.ElapsedMilliseconds}ms");
+                buffer.AppendLine($"Finished in {stopwatch.ElapsedMilliseconds}ms");
 
-                Console.WriteLine();
+                buffer.AppendLine();
 
-                Console.WriteLine($"Memory used: {(endMemory - startMemory) / 1000}Kb");
+                buffer.AppendLine($"Memory used: {(endMemory - startMemory) / 1000}Kb");
 
-                Console.WriteLine();
-                Console.WriteLine();
+                buffer.AppendLine();
+                buffer.AppendLine();
+
+                Console.Write(buffer);
 
                 if (parser.ErrorSink.Any())
                 {
@@ -136,7 +143,10 @@ namespace Sample
         static void PrettyPrintError(Error error)
         {
             // TODO(Dan): Handle errors spanning multiple lines better!
-            Console.BackgroundColor = error.Severity == Severity.Error ? ConsoleColor.DarkRed : error.Severity == Severity.Warning ? ConsoleColor.DarkYellow : ConsoleColor.DarkBlue;
+            var colour = error.Severity == Severity.Error ? ConsoleColor.DarkRed : error.Severity == Severity.Warning ? ConsoleColor.DarkYellow : ConsoleColor.DarkBlue;
+            var foreground = error.Severity == Severity.Error ? ConsoleColor.Red : error.Severity == Severity.Warning ? ConsoleColor.Yellow : ConsoleColor.Blue;
+
+            Console.BackgroundColor = colour;
             Console.ForegroundColor = ConsoleColor.White;
 
             var level = $"  {error.Severity.ToString()}: ";
@@ -156,47 +166,63 @@ namespace Sample
             Console.Write($"{string.Join("", Enumerable.Range(0, padding).Select(x => " "))}File:{string.Join("", Enumerable.Range(0, padding).Select(x => " "))}");
 
             Console.BackgroundColor = ConsoleColor.Black;
+            Console.WriteLine($" {error.FilePart.FilePath}");
 
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.Write($"{string.Join("", Enumerable.Range(0, padding - 2).Select(x => " "))} Line No:{string.Join("", Enumerable.Range(0, padding - 2).Select(x => " "))}");
             
-
-            Console.WriteLine($" {error.FilePart.FilePath}:{error.FilePart.Start.LineNumber}.");
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.WriteLine($" {error.FilePart.Start.LineNumber}");
             Console.WriteLine();
 
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.ForegroundColor = ConsoleColor.Gray;
 
-            var line = error.FilePart.Lines.First();
-
-            var trimmedLine = line.TrimStart();
+            var buffer = new StringBuilder(error.FilePart.Lines.First());
             var start = error.FilePart.Start.Column - 1;
 
             var index = 0;
 
-            while (line.Length > 0 && line[index] == '\t')
+            while (buffer.Length > 0 && buffer[index] == '\t')
             {
-                start -= 1;
-
+                buffer[index] = ' ';
                 index++;
             }
 
-            //if (line.Length != trimmedLine.Length)
-            //    start = start - (line.Length - trimmedLine.Length);
+            var line = buffer.ToString();
+            var length = (error.FilePart.End.Column - error.FilePart.Start.Column).Min(1);
 
-            var end = error.FilePart.Start.Column - (line.Length - trimmedLine.Length);
-                //? error.FilePart.Start.Column - (line.Length - trimmedLine.Length)
-                //: error.FilePart.Start.Column - (line.Length - trimmedLine.Length);
+            var spaces = string.Join("", Enumerable.Range(0, start).Select(x => " "));
+            var upArrows = string.Join("", Enumerable.Range(0, length.Min(1)).Select(x => "^"));
 
-            var length = (end - start).Min(0);
+            Console.WriteLine($"{" ", 5} | ");
+            Console.Write($"{error.FilePart.Start.LineNumber,5} | ");
 
-            var skip = string.Join("", Enumerable.Range(0, start.Min(0)).Select((x, i) => "-"));
-            var dashes = string.Join("", Enumerable.Range(0, line.Length != trimmedLine.Length ? 0 : length).Select(x => "-"));
-            var upArrows = string.Join("", Enumerable.Range(0, (length).Min(1)).Select(x => "^"));
+            for (int i = 0; i < line.Length; i++)
+            {
+                var @char = line[i];
 
-            var arrow = skip + dashes;
+                if (i >= spaces.Length && i < spaces.Length + upArrows.Length)
+                {
+                    Console.ForegroundColor = foreground;
+                    Console.Write(@char);
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.Write(@char);
+                }
+            }
 
-            Console.WriteLine($"{error.FilePart.Start.LineNumber, 5} | {line.TrimStart()}");
-            Console.WriteLine($"{"", 5} | {arrow}{upArrows}");
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine();
+            Console.Write($"{"", 5} | {spaces}");
 
-            foreach(var l in error.Lines.Skip(1))
+            Console.ForegroundColor = foreground;
+            Console.WriteLine($"{upArrows}");
+            Console.ForegroundColor = ConsoleColor.Gray;
+
+            foreach (var l in error.Lines.Skip(1))
                 Console.WriteLine($"    | {l.TrimStart()}");
 
             Console.WriteLine();

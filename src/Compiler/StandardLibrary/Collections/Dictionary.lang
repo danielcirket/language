@@ -2,11 +2,11 @@
 {
 	public class Dictionary<TKey, TValue>
 	{
-		private TKey _key;
-        private TValue _value;
+		private _key : TKey;
+        private _value : TValue;
 
-        public TKey Key => _key;
-        public TValue Value => _value;
+        public Key : TKey => _key;
+        public Value : TValue => _value;
 
         public constructor(key : TKey, value : TValue)
         {

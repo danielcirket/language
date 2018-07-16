@@ -100,7 +100,7 @@ namespace Parser.Tests
                 var result = parser.Parse(file);
 
                 parser.ErrorSink.HasErrors.Should().Be(true);
-                parser.ErrorSink.Errors.First().Message.Should().Be("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file in 'WhenImportStatementNotAtStartOfFileThenShouldContainTopLevelStatementError.lang'");
+                parser.ErrorSink.Errors.First().Message.Should().Be("Top-level statements are not permitted. Statements must be part of a module with the exception of import statements which are at the start of the file");
                 parser.ErrorSink.Errors.First().Severity.Should().Be(Severity.Error);
             }
         }

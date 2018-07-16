@@ -5,17 +5,13 @@ import Sx.AnotherTest;
 module Sx.Test
 {
 	[Entry]
-	public void Main(args : Array<string>)
+	public  Main(args : Array<string>) -> void
 	{
-		let a = 1;
-		let b = 2;
-		let c = 3;
-		let y = 100;
 	}
 
 	public class Test<T>
 	{
-		public T TProp { get; set; }
+		public TProp : T { get; set; }
 
 		public constructor(value : int)
 		{
@@ -23,7 +19,13 @@ module Sx.Test
 		}
 	}
 
-	public T GenericFunction<T>(value : T) {
+	public GenericFunction<T>(value : T) -> T {
 		return value;
+	}
+
+	public InferredReturnType<T2>(value : T) -> void {
+		//const x = asdfdsfsdfsdfsdfsf;
+		const x = value;
+		x = value;
 	}
 }

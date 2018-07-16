@@ -2,7 +2,7 @@
 {
 	public class InvalidOperationException : Exception
 	{
-		public string Message { get; }
+		public Message : string { get; }
 
 		public constructor(message : string)
 		{

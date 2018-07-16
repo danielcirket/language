@@ -422,6 +422,12 @@ namespace Compiler.Lexing
                         Consume();
                         return CreateToken(TokenType.MinusMinus);
                     }
+                    else if (!IsEOF() && Current == '>')
+                    {
+                        Consume();
+                        return CreateToken(TokenType.Arrow);
+                    }
+
                     return CreateToken(TokenType.Minus);
 
                 case '=':

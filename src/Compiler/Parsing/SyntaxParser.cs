@@ -16,13 +16,12 @@ namespace Compiler.Parsing
     internal class SyntaxParser
     {
         private readonly Tokenizer _tokenizer;
-        private readonly ErrorSink _errorSink;
         private SourceFile _currentSourceFile;
         private TokenStream _tokenStream;
         private Stack<List<TypeExpression>> _genericTypes;
         private bool _error;
 
-        public ErrorSink ErrorSink => _errorSink;
+        public ErrorSink ErrorSink { get; }
         private Token Current => _tokenStream.Current;
         private Token Next => _tokenStream.Next;
         private Token Last => _tokenStream.Last;
@@ -79,6 +78,7 @@ namespace Compiler.Parsing
 
             return new CompilationUnit(imports, modules);
         }
+
         private IEnumerable<AttributeSyntax> ParseAttributes()
         {
             var attributes = new List<AttributeSyntax>();
@@ -507,34 +507,32 @@ namespace Compiler.Parsing
                     case TokenType.EnumKeyword:
                         return ParseEnumDeclaration(attributes, modifier);
                     case TokenType.Identifier:
-                    case TokenType.BoolKeyword:
-                    case TokenType.ByteKeyword:
-                    case TokenType.SByteKeyword:
-                    case TokenType.IntKeyword:
-                    case TokenType.UIntKeyword:
-                    case TokenType.ShortKeyword:
-                    case TokenType.UShortKeyword:
-                    case TokenType.LongKeyword:
-                    case TokenType.ULongKeyword:
-                    case TokenType.FloatKeyword:
-                    case TokenType.DoubleKeyword:
-                    case TokenType.DecimalKeyword:
-                    case TokenType.StringKeyword:
+                    //case TokenType.BoolKeyword:
+                    //case TokenType.ByteKeyword:
+                    //case TokenType.SByteKeyword:
+                    //case TokenType.IntKeyword:
+                    //case TokenType.UIntKeyword:
+                    //case TokenType.ShortKeyword:
+                    //case TokenType.UShortKeyword:
+                    //case TokenType.LongKeyword:
+                    //case TokenType.ULongKeyword:
+                    //case TokenType.FloatKeyword:
+                    //case TokenType.DoubleKeyword:
+                    //case TokenType.DecimalKeyword:
+                    //case TokenType.StringKeyword:
                     //case TokenType.CharKeyword:
                     //case TokenType.ObjectKeyword:
-                    case TokenType.VoidKeyword:
+                    //case TokenType.VoidKeyword:
                         {
                             // Method declaration
-                            var returnType = ParseTypeExpression();
+                            //var returnType = ParseTypeExpression();
 
                             if (Current != TokenType.Identifier)
-                            {
                                 throw SyntaxError($"Unexpected '{Current.Value}', expecting identifier", CreatePart(Last.End), Severity.Error);
-                            }
 
                             var name = ParseIdentifierName();
 
-                            return ParseMethodDeclaration(name, returnType, attributes, modifier);
+                            return ParseMethodDeclaration(name, attributes, modifier);
                         }
                     default:
                         {
@@ -611,8 +609,15 @@ namespace Compiler.Parsing
             if (Current == TokenType.ConstructorKeyword)
                 return ParseConstructorDeclaration(attributes, modifier);
 
-            var returnType = ParseTypeExpression();
             var name = ParseIdentifierName();
+
+            TypeExpression returnType = null;
+
+            if (Current == TokenType.Colon)
+            {
+                Take(TokenType.Colon);
+                returnType = ParseTypeExpression();
+            }
 
             switch (Current.TokenType)
             {
@@ -622,7 +627,7 @@ namespace Compiler.Parsing
 
                 case TokenType.LeftParenthesis:
                 case TokenType.LessThan:
-                    return ParseMethodDeclaration(name, returnType, attributes, modifier);
+                    return ParseMethodDeclaration(name, attributes, modifier);
 
                 case TokenType.Semicolon:
                 case TokenType.Assignment:
@@ -708,17 +713,27 @@ namespace Compiler.Parsing
 
             return new ConstructorDeclaration(CreatePart(keyword.Start), modifier, keyword.Value, parameters, body, attributes);
         }
-        private MethodDeclaration ParseMethodDeclaration(string name, TypeExpression returnType, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
+        private MethodDeclaration ParseMethodDeclaration(string name, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
             var token = Current;
             var genericParameters = new List<TypeExpression>();
 
             if (Current == TokenType.LessThan)
             {
-                genericParameters.AddRange(ParseGenericTypeParameters());
+                var constraints = ParseGenericTypeParameters();
 
-                if (genericParameters.Any(p => p.Name == returnType.Name))
-                    returnType = new InferredTypeExpression(new IdentifierExpression(returnType.FilePart, returnType.Name), returnType.FilePart);
+                // NOTE(Dan): This forcibly removes the case where a generic class is defined unsuitably
+                //            for example: class MyType<T> is OK but class MyType<T<U>> is not!
+                if (constraints.Any(param => param.GenericParameters.Any()))
+                {
+                    var error = constraints.First(param => param.GenericParameters.Any()).GenericParameters.First();
+
+                    AddError("Generic constraints for an method declaration cannot contain nested type parameters.", error.FilePart, Severity.Error);
+                }
+
+                genericParameters.AddRange(constraints.Select(type => new GenericConstraintTypeExpression(type.TypeKind, type.Identifier, type.GenericParameters, type.FilePart)));
+                //if (genericParameters.Any(p => p.Name == returnType.Name))
+                //    returnType = new InferredTypeExpression(new IdentifierExpression(returnType.FilePart, returnType.Name), returnType.FilePart);
             }
 
             // NOTE(Dan): Account for the case where in a declaration we can't use a predefined type / keyword type, e.g. 'int'
@@ -727,18 +742,24 @@ namespace Compiler.Parsing
             foreach (var genericParameter in genericParameters.Where(p => p is PredefinedTypeExpression))
                 AddError($"Unexpected '{genericParameter.Name}', expecting {TokenType.Identifier.Value()}", genericParameter.FilePart, Severity.Error);
 
-            //_genericTypes.Push(genericParameters);
-
             var parameters = ParseParameters();
 
-            if (Current == TokenType.FatArrow)
+            Take(TokenType.Arrow);
+
+            var returnType = ParseTypeExpression();
+
+            if (genericParameters.Any(p => p.Name == returnType.Name))
+                returnType = new InferredTypeExpression(new IdentifierExpression(returnType.FilePart, returnType.Name), returnType.FilePart);
+
+            // TODO(Dan): Do we want to do this any more since the syntax change?
+            /*if (Current == TokenType.FatArrow)
             {
                 var method = ParseExpressionBodiedMember(name, returnType, parameters, attributes, modifier);
 
                 TakeSemicolon();
 
                 return method;
-            }
+            }*/
 
             var end = Last;
 
@@ -1051,7 +1072,7 @@ namespace Compiler.Parsing
                 ? VariableMutabilityType.Mutable
                 : VariableMutabilityType.Immutable;
 
-            return new VariableDeclaration(CreatePart(start.Start), name.Name, type, value, mutabilityType);
+            return new VariableDeclaration(name.FilePart, name.Name, type, value, mutabilityType);
         }
         private MethodDeclaration ParseExpressionBodiedMember(string methodName, TypeExpression returnType, IEnumerable<ParameterDeclaration> parameters, IEnumerable<AttributeSyntax> attributes, SyntaxModifier modifier)
         {
@@ -1379,6 +1400,7 @@ namespace Compiler.Parsing
                 //                         vs.
                 //                         const x = y<int>(10)
                 //                         etc.
+                // TODO(Dan): Fix this retarded shit!
                 if (Current == TokenType.LessThan && TryParseExpressionOrReset(() => ParseMethodCallExpression(left), out var expression))
                     return expression;
 
@@ -1563,7 +1585,7 @@ namespace Compiler.Parsing
         {
             var token = Take(TokenType.Identifier);
 
-            return new IdentifierExpression(CreatePart(token.Start), token.Value);
+            return new IdentifierExpression(CreatePart(token.Start, token.End), token.Value);
         }
         private Expression ParseMethodCallExpression()
         {
@@ -1763,7 +1785,7 @@ namespace Compiler.Parsing
         // Errors
         private void AddError(string message, SourceFilePart part, Severity severity)
         {
-            _errorSink.AddError($"{message}", part, severity);
+            ErrorSink.AddError($"{message}", part, severity);
         }
         private SyntaxException UnexpectedToken(TokenType expected)
         {
@@ -1833,7 +1855,7 @@ namespace Compiler.Parsing
         }
         private SourceFilePart CreatePart(SourceFileLocation start)
         {
-            return CreatePart(start, Current.End);
+            return CreatePart(start, Last.End);
         }
         private SourceFilePart CreatePart(SourceFileLocation start, SourceFileLocation end)
         {
@@ -1967,7 +1989,7 @@ namespace Compiler.Parsing
             // HACK(Dan): We need to do this properly, and not just catch the exception, this is awful for perf
             //            which is bad enough as it is!
             result = default;
-            _errorSink.IsWritable = false;
+            ErrorSink.IsWritable = false;
             var index = _tokenStream.Position;
             var stopwatch = Stopwatch.StartNew();
 
@@ -1991,7 +2013,7 @@ namespace Compiler.Parsing
             }
             finally
             {
-                _errorSink.IsWritable = true;
+                ErrorSink.IsWritable = true;
             }
         }
 
@@ -2011,7 +2033,7 @@ namespace Compiler.Parsing
                 throw new ArgumentNullException(nameof(errorSink));
 
             _tokenizer = tokenizer;
-            _errorSink = errorSink;
+            ErrorSink = errorSink;
             _genericTypes = new Stack<List<TypeExpression>>(new[] { new List<TypeExpression>() });
         }
     }

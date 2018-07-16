@@ -4,21 +4,21 @@ module System.Collections
 {
 	public class Stack<T>
 	{
-		private Array<T> _items;
-		private int _size = 0;
-		private int _defaultCapactity = 4;
+		private _items : Array<T>;
+		private _size : int = 0;
+		private _defaultCapactity : int = 4;
 
-		public int Count => _size;
+		public Count : int => _size;
 
-		public Stack<T> Clear() 
+		public Clear() -> Stack<T>
 		{
 			return new Stack<T>();
 		}
-		public bool Contains(item : T)
+		public Contains(item : T) -> bool
 		{
 			return _size != 0 && _items.LastIndexOf(_items, item, _size - 1) != -1;
 		}
-		public T Peek()
+		public Peek() -> T
 		{
 			const size = _size - 1;
 		
@@ -32,7 +32,7 @@ module System.Collections
 		
 			return item;
 		}
-		public T Pop()
+		public Pop() -> T
 		{
 			const size = _size - 1;
 		
@@ -48,7 +48,7 @@ module System.Collections
 		
 			return item;
 		}
-		public Stack<T> Push(item : T)
+		public Push(item : T) -> Stack<T>
 		{
 			return new Stack<T>(_items.Add(item));
 		}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Compiler.Parsing;
 using Compiler.Parsing.Syntax;
@@ -92,6 +93,18 @@ namespace Compiler.Semantics
         protected override BoundSyntaxNode VisitAssignment(BinaryExpression expression)
         {
             var boundLeft = (BoundExpression)expression.Left.Accept(this);
+
+            if (boundLeft is BoundIdentifierExpression identifier)
+            {
+                var declaration = identifier.Declaration?.Declaration as BoundVariableDeclaration;
+
+                if (declaration != null && declaration.MutabilityType == VariableMutabilityType.Immutable)
+                {
+                    AddError($"Cannot re-assign to '{declaration.Name}' because it is declared constant. Consider changing 'const' to 'let'.", 
+                        boundLeft.SyntaxNode<SyntaxNode>().FilePart);
+                }                    
+            }
+
             var boundRight = (BoundExpression)expression.Right.Accept(this);
 
             return new BoundBinaryExpression(expression, boundLeft, boundRight, CurrentScope);
@@ -223,13 +236,15 @@ namespace Compiler.Semantics
             //            We may need to think about making this a fast lookup in future, but for now just do the simple naive thing.
             if (!CurrentScope.TryGetValue(userdefinedTypeExpression.Name, out Symbol symbol))
             {
+                symbol = new Symbol(userdefinedTypeExpression.Name, null);
+
                 if (_mode == SyntaxBindingMode.Full)
                     AddError($"Could not find type '{userdefinedTypeExpression.Name}', are you missing an import statement?", userdefinedTypeExpression.FilePart);
             }
             
             var typeExpression = new BoundUserDefinedTypeExpression(userdefinedTypeExpression, symbol, CurrentScope);
 
-            CurrentScope.AddOrUpdate(new Symbol(userdefinedTypeExpression.Name, null));
+            CurrentScope.AddOrUpdate(symbol);
 
             return typeExpression;
         }
@@ -239,11 +254,13 @@ namespace Compiler.Semantics
 
             if (!CurrentScope.TryGetValue(genericConstraintTypeExpression.Name, out Symbol symbol))
             {
-                CurrentScope.AddOrUpdate(new Symbol(genericConstraintTypeExpression.Name, null));
-
+                symbol = new Symbol(genericConstraintTypeExpression.Name, null);
+                
                 if (_mode == SyntaxBindingMode.Full)
                     AddError($"Could not find type '{genericConstraintTypeExpression.Name}', are you missing an import statement?", genericConstraintTypeExpression.FilePart);
             }
+
+            CurrentScope.AddOrUpdate(symbol);
 
             // TODO(Dan): Need to add this type to the current scope so it can be looked up and inferred later in the pipeline!
             var typeExpression = new BoundGenericConstraintTypeExpression(genericConstraintTypeExpression, symbol, CurrentScope);
@@ -281,7 +298,7 @@ namespace Compiler.Semantics
         protected override BoundSyntaxNode VisitInferredType(InferredTypeExpression inferredTypeExpression)
         {
             // TODO(Dan): Add to current scope!
-            CurrentScope.AddOrUpdate(new Symbol(inferredTypeExpression.Name, null));
+            //CurrentScope.AddOrUpdate(new Symbol(inferredTypeExpression.Name, null));
 
             return new BoundInferredTypeExpression(inferredTypeExpression, CurrentScope);
         }
@@ -489,31 +506,47 @@ namespace Compiler.Semantics
             }
 
             var currentScope = CurrentScope;
+
             _scopes.Push(new Scope(CurrentScope));
 
-            var boundType = (BoundTypeExpression)methodDeclaration.ReturnType.Accept(this);
-            var boundGenericConstrains = new List<BoundTypeExpression>();
+            symbol?.Declaration?.Scope?.CopyTo(_errorSink, CurrentScope);
+
+            var boundGenericConstraints = new List<BoundTypeExpression>();
             var parameters = new List<BoundParameterDeclaration>();
 
             foreach (var item in methodDeclaration.GenericTypeConstraints)
             {
                 var boundItem = item.Accept(this) as BoundTypeExpression;
 
-                if (CurrentScope.TryGetValue(boundItem.Name, out Symbol match))
+                if (CurrentScope.Parent.TryGetValue(boundItem.Name, out Symbol match))
                     if (_mode == SyntaxBindingMode.Full)
                         AddWarning($"Type parameter '{boundItem.Name}' has the same name as the type parameter from it's enclosing type.", item.FilePart);
 
-                boundGenericConstrains.Add(boundItem);
+                boundGenericConstraints.Add(boundItem);
             }
+
+            var boundType = (BoundTypeExpression)methodDeclaration.ReturnType.Accept(this);
 
             foreach (var item in methodDeclaration.Parameters)
                 parameters.Add(item.Accept(this) as BoundParameterDeclaration);
+            
+            // TODO(Dan): Move this to type checking!
+            if (_mode == SyntaxBindingMode.Full)
+            {
+                if (boundGenericConstraints.Any(constraint => !parameters.Any(param => constraint.Name == param.Type.Name)))
+                {
+                    var unmatchedParameters = parameters.Where(param => !boundGenericConstraints.Any(constraint => constraint.Name == param.Type.Name));
 
-
+                    foreach (var parameter in unmatchedParameters)
+                    {
+                        AddError($"Could not find type '{parameter.Type.Name}', are you missing an import statement?", parameter.Type.SyntaxNode<SyntaxNode>().FilePart);
+                    }
+                }
+            }
 
             if (_mode == SyntaxBindingMode.DeclarationOnly)
             {
-                var declaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, currentScope);
+                var declaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, CurrentScope);
 
                 _scopes.Pop();
 
@@ -525,7 +558,7 @@ namespace Compiler.Semantics
             // TODO(Dan): Figure out if we should try and bind the return type (i.e. it potentially could be generic so can't do that until it's been inferred!)
             //var boundType = (BoundTypeExpression)methodDeclaration.ReturnType.Accept(this);
             var boundBody = (BoundBlockStatement)methodDeclaration.Body.Accept(this);
-            var boundDelcaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, boundBody, currentScope);
+            var boundDelcaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, boundBody, CurrentScope);
 
             _scopes.Pop();
 

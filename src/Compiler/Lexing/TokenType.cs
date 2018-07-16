@@ -56,6 +56,7 @@
         Semicolon,
         Colon,
         FatArrow,
+        Arrow,
 
         // Keywords
         ImportKeyword,

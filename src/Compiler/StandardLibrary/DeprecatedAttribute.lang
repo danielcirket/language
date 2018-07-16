@@ -2,9 +2,9 @@
 {
 	public class DeprecatedAttribute : Attribute
 	{
-		public bool IsError => true;
-		public bool IsWarning => false;
-		public string Message { get; }
+		public IsError : bool => true;
+		public IsWarning : bool => false;
+		public Message : string { get; }
 
 		public constructor(message : string)
 		{

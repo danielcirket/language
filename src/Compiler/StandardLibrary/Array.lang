@@ -2,19 +2,19 @@
 {
 	public class Array<T>
 	{
-		public int Length { get; }
+		public Length : int { get; }
 
-		public Array<T> Add(item : T)
+		public Add(item : T) -> Array<T>
 		{
 		}
-		public Array<T> Clear()
+		public Clear() -> Array<T>
 		{
 
 		}
-		public int? IndexOf<T>(value : T)
+		public IndexOf<T>(value : T) -> int?
 		{
 		}
-		public int? LastIndexOf<T>(value : T)
+		public LastIndexOf<T>(value : T) -> int?
 		{
 		}
 

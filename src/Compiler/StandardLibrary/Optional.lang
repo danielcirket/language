@@ -2,8 +2,8 @@
 {
 	public class Optional<T>
 	{
-		private bool _hasValue;
+		private _hasValue : bool;
 
-		public bool HasValue => _hasValue;
+		public HasValue : bool => _hasValue;
 	}
 }

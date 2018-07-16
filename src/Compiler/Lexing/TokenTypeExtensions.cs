@@ -55,6 +55,7 @@ namespace Compiler.Lexing
             { TokenType.Semicolon, ";" },
             { TokenType.Colon, ":" },
             { TokenType.FatArrow, "=>" }, // =>
+            { TokenType.Arrow, "->" }, // =>
             { TokenType.CharLiteral, "'" }, // '
         };
 
