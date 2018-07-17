@@ -10,7 +10,7 @@ namespace Compiler.Parsing.Syntax.Declarations
         public override SyntaxKind Kind => SyntaxKind.MethodDeclaration;
         public SyntaxModifier Modifier { get; }
         public BlockStatement Body { get; }
-        public IEnumerable<TypeExpression> GenericTypeConstraints { get; }
+        public IEnumerable<TypeExpression> GenericTypeParameters { get; }
         public IEnumerable<ParameterDeclaration> Parameters { get; }
         public TypeExpression ReturnType { get; }
 
@@ -39,7 +39,7 @@ namespace Compiler.Parsing.Syntax.Declarations
             SyntaxModifier modifier,
             string name,
             TypeExpression returnType, 
-            IEnumerable<TypeExpression> genericTypeConstraints,
+            IEnumerable<TypeExpression> genericTypeParameters,
             IEnumerable<ParameterDeclaration> parameters, 
             BlockStatement body, 
             IEnumerable<AttributeSyntax> attributes)
@@ -47,14 +47,14 @@ namespace Compiler.Parsing.Syntax.Declarations
         {
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
-            if (genericTypeConstraints == null)
-                throw new ArgumentNullException(nameof(genericTypeConstraints));
+            if (genericTypeParameters == null)
+                throw new ArgumentNullException(nameof(genericTypeParameters));
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
 
             Modifier = modifier;
             ReturnType = returnType;
-            GenericTypeConstraints = genericTypeConstraints;
+            GenericTypeParameters = genericTypeParameters;
             Parameters = parameters;
             Body = body;
         }

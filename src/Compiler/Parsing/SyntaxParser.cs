@@ -684,22 +684,30 @@ namespace Compiler.Parsing
                 }
             });
 
-            return new InterfaceDeclaration(CreatePart(keyword.Start), modifier, name, properties, methods, attributes);
+            return new InterfaceDeclaration(CreatePart(keyword.Start), modifier, name, genericParameters, properties, methods, attributes);
         }
         private Declaration ParseInterfaceMember(IEnumerable<AttributeSyntax> attributes)
         {
-            var returnType = ParseTypeExpression();
             var name = ParseIdentifierName();
 
-            switch (Current.Value)
+            TypeExpression returnType = null;
+
+            if (Current == TokenType.Colon)
             {
-                case "{":
-                case "=>":
+                Take(TokenType.Colon);
+                returnType = ParseTypeExpression();
+            }
+
+            switch (Current.TokenType)
+            {
+                case TokenType.LeftBracket:
+                case TokenType.FatArrow:
                     return ParseInterfacePropertyDeclaration(name, returnType, attributes);
 
-                case "(":
-                //case "<":
-                    return ParseInterfaceMethodDeclaration(name, returnType, attributes);
+                case TokenType.LeftParenthesis:
+                case TokenType.LessThan:
+                    //case "<":
+                    return ParseInterfaceMethodDeclaration(name, attributes);
 
                 default:
                     throw UnexpectedToken("Property or Method Declaration");
@@ -767,12 +775,43 @@ namespace Compiler.Parsing
 
             return new MethodDeclaration(CreatePart(token.Start, end.End), modifier, name, returnType, genericParameters, parameters, body, attributes);
         }
-        private MethodDeclaration ParseInterfaceMethodDeclaration(string name, TypeExpression returnType, IEnumerable<AttributeSyntax> attributes)
+        private MethodDeclaration ParseInterfaceMethodDeclaration(string name, IEnumerable<AttributeSyntax> attributes)
         {
             var token = Current;
+            var genericParameters = new List<TypeExpression>();
+
+            if (Current == TokenType.LessThan)
+            {
+                var constraints = ParseGenericTypeParameters();
+
+                // NOTE(Dan): This forcibly removes the case where a generic class is defined unsuitably
+                //            for example: class MyType<T> is OK but class MyType<T<U>> is not!
+                if (constraints.Any(param => param.GenericParameters.Any()))
+                {
+                    var error = constraints.First(param => param.GenericParameters.Any()).GenericParameters.First();
+
+                    AddError("Generic constraints for an method declaration cannot contain nested type parameters.", error.FilePart, Severity.Error);
+                }
+
+                genericParameters.AddRange(constraints.Select(type => new GenericConstraintTypeExpression(type.TypeKind, type.Identifier, type.GenericParameters, type.FilePart)));
+                //if (genericParameters.Any(p => p.Name == returnType.Name))
+                //    returnType = new InferredTypeExpression(new IdentifierExpression(returnType.FilePart, returnType.Name), returnType.FilePart);
+            }
+
+            // NOTE(Dan): Account for the case where in a declaration we can't use a predefined type / keyword type, e.g. 'int'
+            //            This is OK in a MethodCall because the int will be part of the type being inferred, but here we 100% do not want
+            //            to use this as an inferred type as it will impact the usage of the keyword type.
+            foreach (var genericParameter in genericParameters.Where(p => p is PredefinedTypeExpression))
+                AddError($"Unexpected '{genericParameter.Name}', expecting {TokenType.Identifier.Value()}", genericParameter.FilePart, Severity.Error);
+
             var parameters = ParseParameters();
 
-            // TODO(Dan): Generic constraints
+            Take(TokenType.Arrow);
+
+            var returnType = ParseTypeExpression();
+
+            if (genericParameters.Any(p => p.Name == returnType.Name))
+                returnType = new InferredTypeExpression(new IdentifierExpression(returnType.FilePart, returnType.Name), returnType.FilePart);
 
             TakeSemicolon();
 

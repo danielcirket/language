@@ -2,7 +2,7 @@
 {
 	public interface Exception
 	{
-		string Message { get; }
-		StackTrace StackTrace { get; }
+		Message: string { get; }
+		StackTrace: StackTrace { get; }
 	}
 }

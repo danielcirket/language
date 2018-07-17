@@ -14,7 +14,7 @@ namespace Compiler.Parsing.Syntax.Declarations
         public IEnumerable<MethodDeclaration> Methods { get; }
         public IEnumerable<ConstructorDeclaration> Constructors { get; }
         public IEnumerable<IdentifierExpression> Inheritors { get; }
-        public IEnumerable<TypeExpression> GenericParameters { get; }
+        public IEnumerable<TypeExpression> GenericTypeParameters { get; }
 
         public ClassDeclaration(SourceFilePart filePart,
            string name,
@@ -47,7 +47,7 @@ namespace Compiler.Parsing.Syntax.Declarations
             Properties = properties;
             Methods = methods;
             Constructors = constructors;
-            GenericParameters = genericParameters;
+            GenericTypeParameters = genericParameters;
             Inheritors = inheritors;
         }
     }

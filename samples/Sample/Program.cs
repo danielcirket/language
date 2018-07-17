@@ -26,7 +26,7 @@ namespace Sample
                 .Concat(Directory.GetFiles(Path.Combine(entryAssemblyLocation, "StandardLibrary"), "*.lang", SearchOption.AllDirectories))
                 .Select(f => new SourceFile(f, File.ReadAllText(f)));
 
-            var parser = new LanguageParser();
+            var parser = new SyntaxParser();
             var sematicAnalyzer = new SematicAnalyzer(parser.ErrorSink);
 
             var stopwatch = new Stopwatch();
@@ -38,7 +38,7 @@ namespace Sample
             {
                 stopwatch.Start();
 
-                var compilationRoot = await parser.ParseAsync(files);
+                var compilationRoot = parser.Parse(files);
 
                 stopwatch.Stop();
 

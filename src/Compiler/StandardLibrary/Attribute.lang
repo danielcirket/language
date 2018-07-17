@@ -2,7 +2,7 @@
 {
 	public interface Attribute
 	{
-		bool IsError { get; }
-		bool IsWarning { get; }
+		IsError: bool { get; }
+		IsWarning: bool { get; }
 	}
 }

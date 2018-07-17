@@ -11,11 +11,11 @@ module Sx.Test
 
 	public class Test<T>
 	{
-		public TProp : T { get; set; }
+		public Prop : T { get; set; }
 
 		public constructor(value : int)
 		{
-			TProp = GenericFunction<int>(10);
+			Prop = GenericFunction<int>(10);
 		}
 	}
 
@@ -23,9 +23,14 @@ module Sx.Test
 		return value;
 	}
 
-	public InferredReturnType<T2>(value : T) -> void {
+	public InferredReturnType<T2>(value : T) -> T3 {
 		//const x = asdfdsfsdfsdfsdfsf;
 		const x = value;
 		x = value;
+	}
+
+	public interface ITestGenericInterface<T>
+	{
+		SomeMethodThatAcceptsTAndReturnsT(value : T) -> T;
 	}
 }

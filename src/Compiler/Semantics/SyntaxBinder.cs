@@ -93,15 +93,14 @@ namespace Compiler.Semantics
         protected override BoundSyntaxNode VisitAssignment(BinaryExpression expression)
         {
             var boundLeft = (BoundExpression)expression.Left.Accept(this);
-
             if (boundLeft is BoundIdentifierExpression identifier)
             {
                 var declaration = identifier.Declaration?.Declaration as BoundVariableDeclaration;
 
                 if (declaration != null && declaration.MutabilityType == VariableMutabilityType.Immutable)
                 {
-                    AddError($"Cannot re-assign to '{declaration.Name}' because it is declared constant. Consider changing 'const' to 'let'.", 
-                        boundLeft.SyntaxNode<SyntaxNode>().FilePart);
+                    AddError($"Cannot re-assign to '{declaration.Name}' because it is declared constant. Consider changing 'const' to 'let'.",
+                        expression.FilePart);
                 }                    
             }
 
@@ -329,7 +328,7 @@ namespace Compiler.Semantics
 
             _scopes.Push(scope);
 
-            foreach (var parameter in classDeclaration.GenericParameters)
+            foreach (var parameter in classDeclaration.GenericTypeParameters)
                 boundGenericParameters.Add((BoundTypeExpression)parameter.Accept(this));
 
             foreach (var field in classDeclaration.Fields)
@@ -514,7 +513,7 @@ namespace Compiler.Semantics
             var boundGenericConstraints = new List<BoundTypeExpression>();
             var parameters = new List<BoundParameterDeclaration>();
 
-            foreach (var item in methodDeclaration.GenericTypeConstraints)
+            foreach (var item in methodDeclaration.GenericTypeParameters)
             {
                 var boundItem = item.Accept(this) as BoundTypeExpression;
 
@@ -529,7 +528,7 @@ namespace Compiler.Semantics
 
             foreach (var item in methodDeclaration.Parameters)
                 parameters.Add(item.Accept(this) as BoundParameterDeclaration);
-            
+
             // TODO(Dan): Move this to type checking!
             if (_mode == SyntaxBindingMode.Full)
             {
@@ -541,6 +540,13 @@ namespace Compiler.Semantics
                     {
                         AddError($"Could not find type '{parameter.Type.Name}', are you missing an import statement?", parameter.Type.SyntaxNode<SyntaxNode>().FilePart);
                     }
+                }
+
+                // TODO(Dan): Warning for generic return types not existing in parameter types, generic constraints, or parent scope
+                if (!(boundType is BoundPredefinedTypeExpression) && !CurrentScope.Parent.TryGetValue(boundType.Name, out var match))
+                {
+                    if (!boundGenericConstraints.Any(constraint => constraint.Name == boundType.Name))
+                        AddError($"Could not find type '{boundType.Name}', are you missing an import statement?", boundType.SyntaxNode<SyntaxNode>().FilePart);
                 }
             }
 
