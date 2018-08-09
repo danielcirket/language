@@ -3,7 +3,6 @@
     public enum SyntaxBindingMode
     {
         DeclarationOnly,
-        Full,
-        RebindingDeclaration
+        Full
     }
 }

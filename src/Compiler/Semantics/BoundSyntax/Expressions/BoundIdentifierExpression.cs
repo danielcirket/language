@@ -7,8 +7,8 @@ namespace Compiler.Semantics.BoundSyntax.Expressions
     internal class BoundIdentifierExpression : BoundExpression
     {
         public string Name => SyntaxNode<IdentifierExpression>().Name;
-        public Symbol Declaration { get; }
-        public override BoundTypeExpression Type => Declaration?.Declaration?.Type;
+        public Symbol Symbol { get; }
+        public override BoundTypeExpression Type => Symbol?.Declaration?.Type;
 
         public BoundIdentifierExpression(
             IdentifierExpression expression,
@@ -18,11 +18,11 @@ namespace Compiler.Semantics.BoundSyntax.Expressions
         }
         public BoundIdentifierExpression(
             IdentifierExpression expression,
-            Symbol declaration,
+            Symbol symbol,
             Scope scope)
             : base(expression, scope)
         {
-            Declaration = declaration;
+            Symbol = symbol;
         }
         public BoundIdentifierExpression(
             IdentifierExpression expression,
@@ -31,7 +31,7 @@ namespace Compiler.Semantics.BoundSyntax.Expressions
             Scope scope)
             : base(expression, type, scope)
         {
-            Declaration = declaration;
+            Symbol = declaration;
         }
     }
 }

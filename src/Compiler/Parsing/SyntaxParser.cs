@@ -289,8 +289,6 @@ namespace Compiler.Parsing
                             return value;
                         }
                     }
-                    // TODO(Dan): Fix this error message!
-                    //throw UnexpectedToken("Statement");
             }
 
             if (Last != TokenType.RightBracket && Current == TokenType.Semicolon)

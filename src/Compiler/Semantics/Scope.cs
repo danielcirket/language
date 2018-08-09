@@ -25,7 +25,7 @@ namespace Compiler.Semantics
         public void AddOrUpdate(Symbol symbol) => _symbols.AddOrUpdate(symbol);
         public bool TryGetValue(string name, out Symbol symbol) => _symbols.TryGetValue(name, out symbol);
 
-        public void CopyTo(ErrorSink errorSink, Scope scope)
+        public void CopyTo(Scope scope, ErrorSink errorSink)
         {
             foreach(var item in _symbols)
             {

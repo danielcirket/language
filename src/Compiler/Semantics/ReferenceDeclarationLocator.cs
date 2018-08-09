@@ -46,7 +46,7 @@ namespace Compiler.Semantics
 
         private BoundDeclaration DeclarationFor(BoundIdentifierExpression expression)
         {
-            return DeclarationFor(expression.Declaration.Declaration);
+            return DeclarationFor(expression.Symbol.Declaration);
         }
         private BoundDeclaration DeclarationFor(BoundMethodCallExpression expression)
         {
@@ -55,7 +55,7 @@ namespace Compiler.Semantics
 
         private BoundDeclaration DeclarationFor(BoundTypeExpression expression)
         {
-            return expression.Declaration.Declaration;
+            return expression.Symbol.Declaration;
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Compiler.Semantics
 
         private BoundTypeExpression TypeFor(BoundIdentifierExpression expression)
         {
-            return TypeFor(expression.Declaration.Declaration);
+            return TypeFor(expression.Symbol.Declaration);
         }
         private BoundTypeExpression TypeFor(BoundMethodCallExpression expression)
         {

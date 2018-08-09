@@ -33,7 +33,7 @@ namespace Sample
             var totalTimeStopwatch = new Stopwatch();
 
             var buffer = new StringBuilder();
-
+            
             try
             {
                 stopwatch.Start();
@@ -142,7 +142,7 @@ namespace Sample
 
         static void PrettyPrintError(Error error)
         {
-            // TODO(Dan): Handle errors spanning multiple lines better!
+            
             var colour = error.Severity == Severity.Error ? ConsoleColor.DarkRed : error.Severity == Severity.Warning ? ConsoleColor.DarkYellow : ConsoleColor.DarkBlue;
             var foreground = error.Severity == Severity.Error ? ConsoleColor.Red : error.Severity == Severity.Warning ? ConsoleColor.Yellow : ConsoleColor.Blue;
 
@@ -223,7 +223,7 @@ namespace Sample
             Console.ForegroundColor = ConsoleColor.Gray;
 
             foreach (var l in error.Lines.Skip(1))
-                Console.WriteLine($"    | {l.TrimStart()}");
+                Console.WriteLine($"{"", 5} | {l.Replace('\t', ' ')}");
 
             Console.WriteLine();
             Console.WriteLine();

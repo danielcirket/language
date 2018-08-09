@@ -15,7 +15,7 @@ module Sx.Test
 
 		public constructor(value : int)
 		{
-			Prop = GenericFunction<int>(10, false);
+			Prop = GenericFunction<int>(10);
 		}
 	}
 

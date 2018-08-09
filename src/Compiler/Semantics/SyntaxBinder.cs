@@ -56,7 +56,7 @@ namespace Compiler.Semantics
                 }
 
                 foreach (var import in imports)
-                    import.Scope.CopyTo(_errorSink, CurrentScope);
+                    import.Scope.CopyTo(CurrentScope, _errorSink);
             }
 
             foreach (var module in unit.Modules)
@@ -95,7 +95,7 @@ namespace Compiler.Semantics
             var boundLeft = (BoundExpression)expression.Left.Accept(this);
             if (boundLeft is BoundIdentifierExpression identifier)
             {
-                var declaration = identifier.Declaration?.Declaration as BoundVariableDeclaration;
+                var declaration = identifier.Symbol?.Declaration as BoundVariableDeclaration;
 
                 if (declaration != null && declaration.MutabilityType == VariableMutabilityType.Immutable)
                 {
@@ -174,26 +174,46 @@ namespace Compiler.Semantics
 
             if (reference is BoundIdentifierExpression identifier)
             {
-                declaration = (BoundMethodDeclaration)((BoundIdentifierExpression)reference).Declaration.Declaration;
+                declaration = (BoundMethodDeclaration)((BoundIdentifierExpression)reference).Symbol.Declaration;
             }
             if (reference is BoundReferenceExpression referenceExpression)
             {
-                if (((ReferenceExpression)expression.Reference).References.Count() != referenceExpression.References.Count())
+                var references = ((ReferenceExpression)expression.Reference).References;
+
+                if (references.Count() != referenceExpression.References.Count())
                 {
-                    // TODO(Dan): We couldn't find the type here, we should have already reported this error however.
+                    // TODO(Dan): We couldn't find the type here, we potentially have reported the type not found error,
+                    //            but need to add the error for the context here.
+                    var last = (IdentifierExpression)references.ToList()[referenceExpression.References.Count() - 1];
+                    var start = references.Skip(referenceExpression.References.Count()).Cast<IdentifierExpression>().ToList();
+                    // TODO(Dan): Anything after this is an error.
+                    AddError($"'{last.Name}' does not contain a definition for '{start[0].Name}'", start[0].FilePart);
                 }
                 else
                 {
                     var last = referenceExpression.References.Last();
-                    declaration = ((BoundIdentifierExpression)last).Declaration.Declaration;
+                    declaration = ((BoundIdentifierExpression)last).Symbol.Declaration;
                 }
             }
-            //)
 
             if (declaration is BoundMethodDeclaration methodDeclaration && methodDeclaration.Arity != expression.Arguments.Count())
             {
+                
+                var additionalParameters = expression.Arguments.Skip(methodDeclaration.Arity).ToList();
+                var isMultiLine = additionalParameters.Any(p => p.FilePart.Start.LineNumber != expression.FilePart.Start.LineNumber);
+
+                var sourceFileParts = additionalParameters.Select(x => x.FilePart);
+                var first = sourceFileParts.First();
+                var last = sourceFileParts.Last();
+                //var lines = isMultiLine
+                //    ? expression.Arguments.SelectMany(p => p.FilePart.Lines)
+                //    : sourceFileParts.SelectMany(p => p.Lines);
+                var part = new SourceFilePart(first.FilePath, first.Start, last.End, first.Lines);
+                //var part = new SourceFilePart(first.FilePath, first.Start, last.End, lines);
+
                 AddError($"No overload for '{methodDeclaration.Name}' which takes {expression.Arguments.Count()} arguments.",
-                    reference.SyntaxNode<Expression>().FilePart);
+                    reference.SyntaxNode<Expression>().FilePart
+                    /*part*/);
             }
 
             foreach (var argument in expression.Arguments)
@@ -273,12 +293,6 @@ namespace Compiler.Semantics
             
             var typeExpression = new BoundUserDefinedTypeExpression(userdefinedTypeExpression, symbol, CurrentScope);
 
-            //if (_mode == SyntaxBindingMode.Full)
-            //    CurrentScope.AddOrUpdate(symbol);
-
-            if (_mode == SyntaxBindingMode.Full && symbol.Declaration == null)
-                AddError($"Could not find type '{userdefinedTypeExpression.Name}', are you missing an import statement?", userdefinedTypeExpression.FilePart);
-
             return typeExpression;
         }
         protected override BoundSyntaxNode VisitGenericConstraintType(GenericConstraintTypeExpression genericConstraintTypeExpression)
@@ -316,7 +330,7 @@ namespace Compiler.Semantics
             {
                 var cachedType = _predefinedTypeMap[typeName];
 
-                if (cachedType == null || cachedType?.Declaration == null)
+                if (cachedType == null || cachedType?.Symbol == null)
                     _predefinedTypeMap[typeName] = new BoundPredefinedTypeExpression(predfinedTypeExpression, symbol, CurrentScope);
 
                 return _predefinedTypeMap[typeName];
@@ -358,7 +372,7 @@ namespace Compiler.Semantics
             var scope = new Scope(CurrentScope);
 
             if (existingModule?.Scope != null)
-                existingModule.Scope.CopyTo(_errorSink, scope);
+                existingModule.Scope.CopyTo(scope, _errorSink);
 
             _scopes.Push(scope);
 
@@ -542,7 +556,7 @@ namespace Compiler.Semantics
 
             _scopes.Push(new Scope(CurrentScope));
 
-            symbol?.Declaration?.Scope?.CopyTo(_errorSink, CurrentScope);
+            symbol?.Declaration?.Scope?.CopyTo(CurrentScope, _errorSink);
 
             var boundGenericConstraints = new List<BoundTypeExpression>();
             var parameters = new List<BoundParameterDeclaration>();
@@ -619,8 +633,10 @@ namespace Compiler.Semantics
 
             var scope = new Scope(CurrentScope);
 
+            // TODO(Dan): Ensure that the keyword special types are always available.
+
             if (existingModule?.Scope != null)
-                existingModule?.Scope.CopyTo(_errorSink, scope);
+                existingModule?.Scope.CopyTo(scope, _errorSink);
 
             _scopes.Push(scope);
 
@@ -689,17 +705,16 @@ namespace Compiler.Semantics
                 }
             }
 
-            var boundType = (BoundTypeExpression)propertyDeclaration.Type.Accept(this);
-
             if (_mode == SyntaxBindingMode.DeclarationOnly)
             {
+                var boundType = (BoundTypeExpression)propertyDeclaration.Type.Accept(this);
                 var property = new BoundPropertyDeclaration(propertyDeclaration, boundType, null, null, CurrentScope);
                 CurrentScope.AddOrUpdate(new Symbol(property.Name, property));
                 return property;
             }
 
             // TODO(Dan): Need to figure out when is best to generate the auto property methods...
-            
+            // TODO(Dan): This produces double error messages for missing types
             var boundGetter = (BoundMethodDeclaration)propertyDeclaration.Getter?.Accept(this);
             var boundSetter = (BoundMethodDeclaration)propertyDeclaration.Setter?.Accept(this);
 
@@ -712,7 +727,10 @@ namespace Compiler.Semantics
             if (boundSetter != null)
                 CurrentScope.TryGetValue(boundSetter.Name, out setterSymbol);
 
-            var boundProperty = new BoundPropertyDeclaration(propertyDeclaration, boundType, getterSymbol, setterSymbol, CurrentScope);
+            var returnType = boundGetter?.ReturnType
+                ?? (BoundTypeExpression)propertyDeclaration.Type.Accept(this);
+
+            var boundProperty = new BoundPropertyDeclaration(propertyDeclaration, returnType , getterSymbol, setterSymbol, CurrentScope);
 
             CurrentScope.AddOrUpdate(new Symbol(boundProperty.Name, boundProperty));
 

@@ -197,9 +197,9 @@ namespace Compiler.Semantics.Passes.Types.Inference
         }
         protected override BoundSyntaxNode VisitIdentifier(BoundIdentifierExpression expression)
         {
-            var declaration = (BoundDeclaration)expression.Declaration.Declaration.Accept(this);
+            var declaration = (BoundDeclaration)expression.Symbol.Declaration.Accept(this);
 
-            return new BoundIdentifierExpression(expression.SyntaxNode<IdentifierExpression>(), expression.Declaration, declaration.Type, expression.Scope);
+            return new BoundIdentifierExpression(expression.SyntaxNode<IdentifierExpression>(), expression.Symbol, declaration.Type, expression.Scope);
         }
         protected override BoundSyntaxNode VisitIf(BoundIfStatement statement)
         {
@@ -264,7 +264,7 @@ namespace Compiler.Semantics.Passes.Types.Inference
 
             var type = (BoundTypeExpression)expression.Type.Accept(this);
             var reference = (BoundExpression)expression.Reference.Accept(this);
-            var declaration = ((BoundIdentifierExpression)reference).Declaration.Declaration;
+            var declaration = ((BoundIdentifierExpression)reference).Symbol.Declaration;
             var methodDeclaration = (BoundMethodDeclaration)declaration;
 
             foreach (var argument in expression.Arguments)
@@ -412,9 +412,9 @@ namespace Compiler.Semantics.Passes.Types.Inference
             var predicate = (BoundExpression)statement.Predicate.Accept(this);
             var body = (BoundBlockStatement)statement.Body.Accept(this);
 
-            if (predicate.Type.Declaration.Name != "Bool")
+            if (predicate.Type.Symbol.Name != "Bool")
             {
-                AddError($"Type mismatch, got '{predicate.Type.Declaration.Name}' expecting 'bool'", statement.Predicate.SyntaxNode<Expression>().FilePart);
+                AddError($"Type mismatch, got '{predicate.Type.Symbol.Name}' expecting 'bool'", statement.Predicate.SyntaxNode<Expression>().FilePart);
             }
 
             return new BoundWhileStatement(statement.SyntaxNode<WhileStatement>(), predicate, body, statement.Scope);
