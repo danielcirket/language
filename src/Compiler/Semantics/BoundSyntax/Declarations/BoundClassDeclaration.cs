@@ -10,7 +10,6 @@ namespace Compiler.Semantics.BoundSyntax.Declarations
     internal class BoundClassDeclaration : BoundDeclaration
     {
         public SyntaxModifier Modifier => SyntaxNode<ClassDeclaration>().Modifier;
-        public int Arity => SyntaxNode<ClassDeclaration>().GenericTypeParameters.Count();
         public IEnumerable<BoundTypeExpression> GenericParameters { get; }
         public IEnumerable<BoundFieldDeclaration> Fields { get; }
         public IEnumerable<BoundPropertyDeclaration> Properties { get; }

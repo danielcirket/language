@@ -16,7 +16,7 @@ module System.Collections
 		}
 		public Contains(item : T) -> bool
 		{
-			return _size != 0 && _items.LastIndexOf(_items, item, _size - 1) != -1;
+			return _size != 0 && _items.LastIndexOf(item) != -1;
 		}
 		public Peek() -> T
 		{
@@ -53,11 +53,11 @@ module System.Collections
 			return new Stack<T>(_items.Add(item));
 		}
 
-		public constructor()
+		/*public constructor()
 		{
 			_items = new Array<T>();
 		}
-		/*public constructor(capacity : int)
+		public constructor(capacity : int)
 		{
 			_items = new Array<T>(capactiy);
 		}

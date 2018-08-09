@@ -168,14 +168,44 @@ namespace Compiler.Semantics
         { 
             var reference = (BoundExpression)expression.Reference.Accept(this);
             var arguments = new List<BoundExpression>();
+            var genericTypeParameters = new List<BoundTypeExpression>();
+
+            BoundDeclaration declaration = null;
+
+            if (reference is BoundIdentifierExpression identifier)
+            {
+                declaration = (BoundMethodDeclaration)((BoundIdentifierExpression)reference).Declaration.Declaration;
+            }
+            if (reference is BoundReferenceExpression referenceExpression)
+            {
+                if (((ReferenceExpression)expression.Reference).References.Count() != referenceExpression.References.Count())
+                {
+                    // TODO(Dan): We couldn't find the type here, we should have already reported this error however.
+                }
+                else
+                {
+                    var last = referenceExpression.References.Last();
+                    declaration = ((BoundIdentifierExpression)last).Declaration.Declaration;
+                }
+            }
+            //)
+
+            if (declaration is BoundMethodDeclaration methodDeclaration && methodDeclaration.Arity != expression.Arguments.Count())
+            {
+                AddError($"No overload for '{methodDeclaration.Name}' which takes {expression.Arguments.Count()} arguments.",
+                    reference.SyntaxNode<Expression>().FilePart);
+            }
 
             foreach (var argument in expression.Arguments)
                 arguments.Add((BoundExpression)argument.Accept(this));
 
-            if (reference.Type != null)
-                return new BoundMethodCallExpression(expression, reference, arguments, reference.Type, CurrentScope);
+            foreach (var type in expression.GenericTypes)
+                genericTypeParameters.Add((BoundTypeExpression)type.Accept(this));
 
-            return new BoundMethodCallExpression(expression, reference, arguments, CurrentScope);
+            if (reference.Type != null)
+                return new BoundMethodCallExpression(expression, reference, arguments, genericTypeParameters, reference.Type, CurrentScope);
+
+            return new BoundMethodCallExpression(expression, reference, arguments, genericTypeParameters, CurrentScope);
         }
         protected override BoundSyntaxNode VisitNew(NewExpression expression)
         {
@@ -243,7 +273,11 @@ namespace Compiler.Semantics
             
             var typeExpression = new BoundUserDefinedTypeExpression(userdefinedTypeExpression, symbol, CurrentScope);
 
-            CurrentScope.AddOrUpdate(symbol);
+            //if (_mode == SyntaxBindingMode.Full)
+            //    CurrentScope.AddOrUpdate(symbol);
+
+            if (_mode == SyntaxBindingMode.Full && symbol.Declaration == null)
+                AddError($"Could not find type '{userdefinedTypeExpression.Name}', are you missing an import statement?", userdefinedTypeExpression.FilePart);
 
             return typeExpression;
         }
@@ -552,7 +586,7 @@ namespace Compiler.Semantics
 
             if (_mode == SyntaxBindingMode.DeclarationOnly)
             {
-                var declaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, CurrentScope);
+                var declaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundGenericConstraints, boundType, CurrentScope);
 
                 _scopes.Pop();
 
@@ -564,7 +598,7 @@ namespace Compiler.Semantics
             // TODO(Dan): Figure out if we should try and bind the return type (i.e. it potentially could be generic so can't do that until it's been inferred!)
             //var boundType = (BoundTypeExpression)methodDeclaration.ReturnType.Accept(this);
             var boundBody = (BoundBlockStatement)methodDeclaration.Body.Accept(this);
-            var boundDelcaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundType, boundBody, CurrentScope);
+            var boundDelcaration = new BoundMethodDeclaration(methodDeclaration, parameters, boundGenericConstraints, boundType, boundBody, CurrentScope);
 
             _scopes.Pop();
 

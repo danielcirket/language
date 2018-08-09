@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Compiler.Parsing.Syntax;
 using Compiler.Parsing.Syntax.Declarations;
 using Compiler.Semantics.BoundSyntax.Expressions;
@@ -13,6 +14,8 @@ namespace Compiler.Semantics.BoundSyntax.Declarations
         public BoundBlockStatement Body { get; }
         public IEnumerable<BoundParameterDeclaration> Parameters { get; }
         public BoundTypeExpression ReturnType => Type;
+        public IEnumerable<BoundTypeExpression> GenericTypeParameters { get; }
+        public int Arity => Parameters.Count();
 
         public BoundMethodDeclaration(
             MethodDeclaration declaration,
@@ -29,6 +32,7 @@ namespace Compiler.Semantics.BoundSyntax.Declarations
         public BoundMethodDeclaration(
             MethodDeclaration declaration,
             IEnumerable<BoundParameterDeclaration> parameters,
+            IEnumerable<BoundTypeExpression> genericTypeParameters,
             BoundTypeExpression returnType,
             Scope scope
         )
@@ -36,12 +40,16 @@ namespace Compiler.Semantics.BoundSyntax.Declarations
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
+            if (genericTypeParameters == null)
+                throw new ArgumentNullException(nameof(genericTypeParameters));
 
             Parameters = parameters;
+            GenericTypeParameters = genericTypeParameters;
         }
         public BoundMethodDeclaration(
             MethodDeclaration declaration,
             IEnumerable<BoundParameterDeclaration> parameters,
+            IEnumerable<BoundTypeExpression> genericTypeParameters,
             BoundTypeExpression returnType,
             BoundBlockStatement body,
             Scope scope
@@ -50,8 +58,11 @@ namespace Compiler.Semantics.BoundSyntax.Declarations
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
+            if (genericTypeParameters == null)
+                throw new ArgumentNullException(nameof(genericTypeParameters));
 
             Parameters = parameters;
+            GenericTypeParameters = genericTypeParameters;
             Body = body;
         }
     }

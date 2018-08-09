@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Compiler.Parsing.Syntax;
 using Compiler.Parsing.Syntax.Declarations;
 using Compiler.Parsing.Syntax.Expressions;
@@ -13,7 +14,7 @@ using Compiler.Semantics.BoundSyntax.Statements;
 using Compiler.Semantics.Symbols;
 using Compiler.Semantics.Types;
 
-namespace Compiler.Semantics.Passes.Declaration
+namespace Compiler.Semantics.Passes.Types.Inference
 {
     internal class TypeInferencePass : BoundSyntaxVisitor<BoundSyntaxNode>, ISemanticPass
     {
@@ -228,13 +229,15 @@ namespace Compiler.Semantics.Passes.Declaration
         {
             var parameters = new List<BoundParameterDeclaration>();
             var returnType = (BoundTypeExpression)methodDeclaration.ReturnType.Accept(this);
+            // TODO(Dan): Need to potentially visit this.
+            var genericTypeParameters = methodDeclaration.GenericTypeParameters;
             
             foreach (var parameter in methodDeclaration.Parameters)
                 parameters.Add((BoundParameterDeclaration)parameter.Accept(this));
             
             var body = (BoundBlockStatement)methodDeclaration.Body.Accept(this);
 
-            return new BoundMethodDeclaration(methodDeclaration.SyntaxNode<MethodDeclaration>(), parameters, returnType, body, methodDeclaration.Scope);
+            return new BoundMethodDeclaration(methodDeclaration.SyntaxNode<MethodDeclaration>(), parameters, genericTypeParameters, returnType, body, methodDeclaration.Scope);
         }
         protected override BoundSyntaxNode VisitUserDefinedType(BoundUserDefinedTypeExpression userdefinedTypeExpression)
         {
@@ -257,15 +260,82 @@ namespace Compiler.Semantics.Passes.Declaration
         protected override BoundSyntaxNode VisitMethodCall(BoundMethodCallExpression expression)
         {
             var arguments = new List<BoundExpression>();
+            var genericTypeParameters = new List<BoundTypeExpression>();
+
             var type = (BoundTypeExpression)expression.Type.Accept(this);
             var reference = (BoundExpression)expression.Reference.Accept(this);
+            var declaration = ((BoundIdentifierExpression)reference).Declaration.Declaration;
+            var methodDeclaration = (BoundMethodDeclaration)declaration;
 
             foreach (var argument in expression.Arguments)
                 arguments.Add((BoundExpression)argument.Accept(this));
 
-            // TODO(Dan): Need to match up the inferred types to their callee site types.
+            foreach (var genericParameter in expression.GenericTypeParameters)
+                genericTypeParameters.Add((BoundTypeExpression)genericParameter.Accept(this));
 
-            return new BoundMethodCallExpression(expression.SyntaxNode<MethodCallExpression>(), reference, arguments, type, expression.Scope);
+            // TODO(Dan): Need to match up the inferred types to their callee site types.
+            var parameters = methodDeclaration.Parameters.ToList();
+
+
+            if (genericTypeParameters.Any())
+            {
+                // TODO(Dan): From the declaration, get the generic type parameters.
+                var generics = methodDeclaration.GenericTypeParameters.ToList();
+                var temp = new List<(int, BoundExpression)>();
+
+                // TODO(Dan): From the declaration, get the generic type argument positions.
+                var args = methodDeclaration.Parameters.ToList();
+
+                for (var i = 0; i < args.Count; i++)
+                {
+                    var arg = args[i];
+
+                    if (arg.Type is BoundInferredTypeExpression inferredTypeExpression)
+                    {
+                        var name = inferredTypeExpression.Name;
+                        var genericParamIndex = 0;
+
+                        for (genericParamIndex = 0; genericParamIndex < generics.Count; genericParamIndex++)
+                        {
+                            var generic = generics[genericParamIndex];
+
+                            if (name == generic.Type.Name)
+                                break;
+                        }
+
+                        temp.Add((genericParamIndex, arguments[i]));
+                    }
+                }
+
+
+
+                // TODO(Dan): 
+            }
+            // TODO(Dan): Check we don't OOB.
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                var parameter = parameters[i];
+                var argument = arguments[i];
+
+                var matchingGenericTypeParameter = genericTypeParameters.FirstOrDefault(t => t.Name == parameter.Type.Name);
+
+                if (matchingGenericTypeParameter == null)
+                {
+                    // TODO(Dan): The type for T has been explicitly supplied!?
+                    //matchingGenericTypeParameter = 
+                }
+
+                if (parameter.Type is BoundInferredTypeExpression boundInferredType)
+                {
+                    if (!(argument.Type is BoundInferredTypeExpression))
+                    {
+                        // TODO(Dan): Substitute T for the arguments type if we can.
+
+                    }
+                }
+            }
+
+            return new BoundMethodCallExpression(expression.SyntaxNode<MethodCallExpression>(), reference, arguments, genericTypeParameters, type, expression.Scope);
         }
         protected override BoundSyntaxNode VisitNew(BoundNewExpression expression)
         {

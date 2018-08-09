@@ -1440,7 +1440,7 @@ namespace Compiler.Parsing
                 //                         const x = y<int>(10)
                 //                         etc.
                 // TODO(Dan): Fix this retarded shit!
-                if (Current == TokenType.LessThan && TryParseExpressionOrReset(() => ParseMethodCallExpression(left), out var expression))
+                if (Current == TokenType.LessThan && _tokenStream.Peek(2) != TokenType.RightParenthesis && TryParseExpressionOrReset(() => ParseMethodCallExpression(left), out var expression))
                     return expression;
 
                 var op = ParseBinaryOperator();

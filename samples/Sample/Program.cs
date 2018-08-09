@@ -74,7 +74,7 @@ namespace Sample
                 var afterSemantics = GC.GetTotalMemory(false);
 
                 buffer.AppendLine();
-                buffer.AppendLine($"Memory used: {(afterSemantics - afterParser) / 1000}Kb");
+                buffer.AppendLine($"Memory used: {(double)((afterSemantics - afterParser) / 1000) / 1000}Mb");
                 buffer.AppendLine();
             }
             catch (Exception ex)
@@ -96,7 +96,7 @@ namespace Sample
 
                 buffer.AppendLine();
 
-                buffer.AppendLine($"Memory used: {(endMemory - startMemory) / 1000}Kb");
+                buffer.AppendLine($"Memory used: {(double)((endMemory - startMemory) / 1000) / 1000}Mb");
 
                 buffer.AppendLine();
                 buffer.AppendLine();

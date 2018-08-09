@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Compiler.Parsing;
 using Compiler.Semantics.Passes.Declaration;
+using Compiler.Semantics.Passes.Types.Inference;
 
 namespace Compiler.Semantics
 {
@@ -39,7 +40,7 @@ namespace Compiler.Semantics
             _passes = new List<ISemanticPass>
             {
                 new DeclarationPass(_errorSink),
-                //new TypeInferencePass(_errorSink),
+                new TypeInferencePass(_errorSink),
                 //new TypeResolutionPass(),
                 //new TypeCheckPass()
                 // Generate properties etc

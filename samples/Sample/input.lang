@@ -15,19 +15,19 @@ module Sx.Test
 
 		public constructor(value : int)
 		{
-			Prop = GenericFunction<int>(10);
+			Prop = GenericFunction<int>(10, false);
 		}
 	}
 
 	public GenericFunction<T>(value : T) -> T {
 		return value;
 	}
-
-	public InferredReturnType<T2>(value : T) -> T3 {
-		//const x = asdfdsfsdfsdfsdfsf;
-		const x = value;
-		x = value;
-	}
+	 
+	// public InferredReturnType<T2>(value : T) -> T3 {
+	// 	  //const x = asdfdsfsdfsdfsdfsf;
+	// 	  const x = value;
+	// 	  x = value;
+	// }
 
 	public interface ITestGenericInterface<T>
 	{

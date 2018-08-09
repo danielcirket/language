@@ -17,6 +17,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Semantics\Passes\Types\Checking\**" />
+    <EmbeddedResource Remove="Semantics\Passes\Types\Checking\**" />
+    <None Remove="Semantics\Passes\Types\Checking\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Parsing\Syntax\Declarations\TypeDeclaration.cs" />
     <Compile Remove="Semantics\BoundSyntax\Declarations\BoundTypeDeclaration.cs" />
   </ItemGroup>
@@ -91,10 +97,6 @@
     <None Update="StandardLibrary\Void.lang">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Semantics\Passes\Types\Checking\" />
   </ItemGroup>
 
 </Project>
